@@ -79,6 +79,7 @@ class FLauncherApp extends StatelessWidget
       title: 'FLauncher',
         theme: ThemeData(
           useMaterial3: true,
+          fontFamily: 'clacon2',
           brightness: Brightness.dark,
           // Use ColorScheme based on accent color
           colorScheme: ColorScheme.fromSeed(
@@ -143,16 +144,26 @@ class FLauncherApp extends StatelessWidget
           ),
         ),
       home: Builder(
-        builder: (context) => PopScope(
-          canPop: false,
-          child: FLauncher(),
-          onPopInvokedWithResult: (didPop, result) {
-            if (didPop) return;
-            LauncherState launcherState = context.read<LauncherState>();
-            launcherState.handleBackNavigation(context);
-          }
-        )
+    builder: (context) => PopScope(
+      canPop: false,
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: Image.asset(
+              'assets/background.jpg',
+              fit: BoxFit.cover,
+            ),
+          ),
+          const FLauncher(),
+        ],
       ),
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        LauncherState launcherState = context.read<LauncherState>();
+        launcherState.handleBackNavigation(context);
+      }
+    )
+  ),
       );
     });
   }
