@@ -8,6 +8,8 @@ import 'package:flutter/material.dart';
 /// traversal policy try to be smart, and in some cases can skip rows when
 /// going up or down.
 class RowByRowTraversalPolicy extends FocusTraversalPolicy with DirectionalFocusTraversalPolicyMixin {
+  final FocusTraversalPolicy _fallbackPolicy = WidgetOrderTraversalPolicy();
+
   @override
   Iterable<FocusNode> sortDescendants(Iterable<FocusNode> descendants, FocusNode currentNode) => descendants;
 
@@ -24,7 +26,9 @@ class RowByRowTraversalPolicy extends FocusTraversalPolicy with DirectionalFocus
       if (direction == TraversalDirection.left || direction == TraversalDirection.right) {
         return false;
       }
-      return super.inDirection(currentNode, direction);
+      // WHY: Fallback for off-screen nodes. If geometric search fails (e.g., lower/higher row 
+      // is not yet laid out/rendered in viewport), fallback to widget order traversal to untrap focus.
+      return _fallbackPolicy.inDirection(currentNode, direction) || super.inDirection(currentNode, direction);
     }
     FocusNode nextNode = searcher.findBestFocusNode(candidates, currentNode);
     nextNode.requestFocus();
@@ -95,12 +99,16 @@ List<FocusNode> toFocusNodes(List<CandidateNode> nodes) => nodes.map((e) => e.no
 /// A few extension methods to the [FocusNode] to be able to compare their
 /// respective position easily.
 extension Geometry on FocusNode {
+  /// Vertical tolerance to account for focus card zoom animations (1.1x - 1.15x),
+  /// outline borders, and subpixel rendering variance on TV panels.
+  static const double rowTolerance = 16.0;
+
   bool isBelow(FocusNode other) {
-    return rect.center.dy.round() > other.rect.center.dy.round();
+    return (rect.center.dy - other.rect.center.dy) > rowTolerance;
   }
 
   bool isBelowOrEquals(FocusNode other) {
-    return rect.center.dy.round() >= other.rect.center.dy.round();
+    return (rect.center.dy - other.rect.center.dy) >= -rowTolerance;
   }
 
   bool isRightTo(FocusNode other) {
@@ -120,15 +128,15 @@ extension Geometry on FocusNode {
   }
 
   bool isAbove(FocusNode other) {
-    return rect.center.dy.round() < other.rect.center.dy.round();
+    return (other.rect.center.dy - rect.center.dy) > rowTolerance;
   }
 
   bool isAboveOrEquals(FocusNode other) {
-    return rect.center.dy.round() <= other.rect.center.dy.round();
+    return (other.rect.center.dy - rect.center.dy) >= -rowTolerance;
   }
 
   bool isOnTheSameRow(FocusNode other) {
-    return rect.center.dy.round() == other.rect.center.dy.round();
+    return (rect.center.dy - other.rect.center.dy).abs() <= rowTolerance;
   }
 
   double distance(FocusNode other) {

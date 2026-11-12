@@ -51,23 +51,27 @@ class CategoryRow extends StatelessWidget
         height: category.rowHeight.toDouble(),
         child: ListView.custom(
           clipBehavior: Clip.none,
+          physics: const ClampingScrollPhysics(),
+          cacheExtent: 240.0,
           padding: const EdgeInsets.all(8),
           scrollDirection: Axis.horizontal,
           childrenDelegate: SliverChildBuilderDelegate(
             childCount: applications.length,
             findChildIndexCallback: _findChildIndex,
             (context, index) => Padding(
-                key: Key(applications[index].packageName),
+                key: ValueKey<String>(applications[index].packageName),
                 padding: const EdgeInsets.symmetric(horizontal: 8),
                 child: AppCard(
+                  index: index,
                   category: category,
                   application: applications[index],
                   autofocus: index == 0,
                   handleUpNavigationToSettings: isFirstSection,
                   isFirstInRow: index == 0,
                   isLastInRow: index == applications.length - 1,
-                  onMove: (direction) => _onMove(context, direction, index),
-                  onMoveEnd: () => _onMoveEnd(context)
+                  onMove: (direction) => _onMove(context, direction, applications[index]),
+                  onMoveEnd: () => _onMoveEnd(context),
+                  onMoveCancel: () => _onMoveCancel(context),
                 )
             )
           )
@@ -78,22 +82,37 @@ class CategoryRow extends StatelessWidget
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Selector<SettingsService, bool>(
-          selector: (context, service) => service.showCategoryTitles,
-          builder: (context, showCategoriesTitle, _) {
+        Selector<SettingsService, (bool, bool)>(
+          selector: (context, service) =>
+              (service.showCategoryTitles, service.showCategoryAppCount),
+          builder: (context, settings, _) {
+            final (showCategoriesTitle, showCategoryAppCount) = settings;
             if (showCategoriesTitle) {
               return Padding(
                 padding: const EdgeInsets.only(left: 16, bottom: 8),
-                child: Text(category.name,
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleLarge!
-                      .copyWith(shadows: [const Shadow(color: Colors.black54, offset: Offset(1, 1), blurRadius: 8)])
+                child: Row(
+                  children: [
+                    Text(category.name,
+                      style: Theme.of(context)
+                          .textTheme
+                          .titleLarge!
+                          .copyWith(shadows: [const Shadow(color: Colors.black54, offset: Offset(1, 1), blurRadius: 8)])
+                    ),
+                    if (showCategoryAppCount) ...[
+                      const SizedBox(width: 8),
+                      Text('•  ${applications.length}',
+                        style: Theme.of(context)
+                            .textTheme
+                            .bodyMedium!
+                            .copyWith(color: Colors.white54)
+                      ),
+                    ],
+                  ],
                 ),
               );
             }
 
-            return SizedBox.shrink();
+            return const SizedBox.shrink();
           }
         ),
         categoryContent
@@ -101,10 +120,18 @@ class CategoryRow extends StatelessWidget
     );
   }
 
-  int _findChildIndex(Key key) =>
-      applications.indexWhere((app) => app.packageName == (key as ValueKey<String>).value);
+  int? _findChildIndex(Key key) {
+    if (key is ValueKey<String>) {
+      final index = applications.indexWhere((app) => app.packageName == key.value);
+      return index >= 0 ? index : null;
+    }
+    return null;
+  }
 
-  void _onMove(BuildContext context, AxisDirection direction, int index) {
+  void _onMove(BuildContext context, AxisDirection direction, App movingApp) {
+    final index = applications.indexOf(movingApp);
+    if (index == -1) return;
+
     int newIndex = 0;
 
     if (direction == AxisDirection.right && index < applications.length - 1) {
@@ -117,15 +144,17 @@ class CategoryRow extends StatelessWidget
     }
 
     final appsService = context.read<AppsService>();
-    final movingApp = applications[index];
+    appsService.setPendingReorderFocus(movingApp.packageName, category.id, newIndex);
     appsService.reorderApplication(category, index, newIndex);
-    
-    // Set pending focus so the app at the new position will request focus
-    appsService.setPendingReorderFocus(movingApp.packageName, category.id);
   }
 
   void _onMoveEnd(BuildContext context) {
     final appsService = context.read<AppsService>();
     appsService.saveApplicationOrderInCategory(category);
+  }
+
+  void _onMoveCancel(BuildContext context) {
+    final appsService = context.read<AppsService>();
+    appsService.cancelReorderApplication(category);
   }
 }

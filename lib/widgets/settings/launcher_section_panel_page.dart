@@ -240,29 +240,29 @@ class LauncherSectionPanelPage extends StatelessWidget
                     padding: EdgeInsets.symmetric(horizontal: 16),
                     child: FilledButton(
                       style: ButtonStyle(
-                        backgroundColor: MaterialStateProperty.resolveWith((states) {
-                          if (states.contains(MaterialState.disabled)) {
+                        backgroundColor: WidgetStateProperty.resolveWith((states) {
+                          if (states.contains(WidgetState.disabled)) {
                             return Colors.white10;
                           }
                           return Color(0xFF6366F1); // Indigo (Modern Primary)
                         }),
-                        foregroundColor: MaterialStateProperty.resolveWith((states) {
-                           if (states.contains(MaterialState.disabled)) {
+                        foregroundColor: WidgetStateProperty.resolveWith((states) {
+                           if (states.contains(WidgetState.disabled)) {
                              return Colors.white38;
                            }
                            return Colors.white;
                         }),
-                        shape: MaterialStatePropertyAll(
+                        shape: WidgetStatePropertyAll(
                           RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))
                         ),
-                        side: MaterialStateProperty.resolveWith((states) {
-                          if (states.contains(MaterialState.focused)) {
+                        side: WidgetStateProperty.resolveWith((states) {
+                          if (states.contains(WidgetState.focused)) {
                             return BorderSide(color: Colors.white, width: 2);
                           }
                           return null;
                         }),
-                        elevation: MaterialStatePropertyAll(0),
-                        padding: MaterialStatePropertyAll(EdgeInsets.symmetric(vertical: 12))
+                        elevation: WidgetStatePropertyAll(0),
+                        padding: WidgetStatePropertyAll(EdgeInsets.symmetric(vertical: 12))
                       ),
                       onPressed: onSavePressed,
                       child: Text(localizations.save),
@@ -276,19 +276,19 @@ class LauncherSectionPanelPage extends StatelessWidget
                   padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   child: FilledButton(
                     style: ButtonStyle(
-                      backgroundColor: MaterialStatePropertyAll(Color(0xFF27272A)), // Zinc 800
-                      foregroundColor: MaterialStatePropertyAll(Color(0xFFEF4444)), // Red 500
-                      shape: MaterialStatePropertyAll(
+                      backgroundColor: WidgetStatePropertyAll(Color(0xFF27272A)), // Zinc 800
+                      foregroundColor: WidgetStatePropertyAll(Color(0xFFEF4444)), // Red 500
+                      shape: WidgetStatePropertyAll(
                           RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))
                       ),
-                      side: MaterialStateProperty.resolveWith((states) {
-                        if (states.contains(MaterialState.focused)) {
+                      side: WidgetStateProperty.resolveWith((states) {
+                        if (states.contains(WidgetState.focused)) {
                           return BorderSide(color: Colors.white, width: 2);
                         }
                         return null;
                       }),
-                      elevation: MaterialStatePropertyAll(0),
-                      padding: MaterialStatePropertyAll(EdgeInsets.symmetric(vertical: 12))
+                      elevation: WidgetStatePropertyAll(0),
+                      padding: WidgetStatePropertyAll(EdgeInsets.symmetric(vertical: 12))
                     ),
                     onPressed: () async {
                       state.setDeleted();
@@ -407,11 +407,22 @@ class _CategorySettingsState extends State<_CategorySettings>
   Widget build(BuildContext context) {
     AppLocalizations localizations = AppLocalizations.of(context)!;
     
-    return Column(
-      children: [
-        _listTile(
-          context,
-          Text(localizations.name),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) return;
+        if (_textFieldFocusNode.hasFocus) {
+          _textFieldFocusNode.unfocus();
+          SystemChannels.textInput.invokeMethod('TextInput.hide');
+        } else {
+          Navigator.of(context).pop();
+        }
+      },
+      child: Column(
+        children: [
+          _listTile(
+            context,
+            Text(localizations.name),
           Padding(
             padding: EdgeInsets.only(top: 4),
             child: DropdownButtonFormField<String>(
@@ -597,9 +608,10 @@ class _CategorySettingsState extends State<_CategorySettings>
               )
             )
           )
-      ]
-    );
-  }
+      ],
+    ),
+  );
+}
 
   void _notifyChange()
   {
@@ -644,14 +656,8 @@ class _CategorySettingsState extends State<_CategorySettings>
         }
       }
 
-      _SettingsState state = context.read();
-      try {
-         // Try to find the section we just created to set it as active
-         final createdSection = service.launcherSections.firstWhere((s) => s is Category && s.id == categoryId);
-         state.setLauncherSection(createdSection);
-      } catch (e) {
-         // Fallback to first section
-         state.setLauncherSection(service.launcherSections[0]);
+      if (mounted) {
+        Navigator.of(context).pop();
       }
     }
     else {
@@ -756,9 +762,9 @@ class _LauncherSpacerSettingsState extends State<_LauncherSpacerSettings>
     if (_creating) {
       await service.addSpacer(_numberValue);
 
-      _SettingsState state = context.read();
-      int index = service.launcherSections.length - 1;
-      state.setLauncherSection(service.launcherSections[index]);
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
     }
     else {
       assert(_spacer != null);

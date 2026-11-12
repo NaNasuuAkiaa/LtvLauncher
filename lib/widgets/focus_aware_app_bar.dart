@@ -1,11 +1,17 @@
 import 'package:flauncher/widgets/settings/settings_panel.dart';
+import 'package:flauncher/widgets/settings/inputs_panel.dart';
+import 'package:flauncher/widgets/settings/notifications_panel.dart';
+import 'package:flauncher/providers/tv_inputs_service.dart';
+import 'package:flauncher/providers/notifications_service.dart';
+import 'package:flauncher/providers/settings_service.dart';
+import 'package:flauncher/providers/weather_service.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../providers/settings_service.dart';
 import 'daily_data_usage_widget.dart';
 import 'date_time_widget.dart';
 import 'network_widget.dart';
+import 'weather_status_bar_widget.dart';
 
 class FocusAwareAppBar extends StatefulWidget implements PreferredSizeWidget
 {
@@ -24,16 +30,30 @@ class FocusAwareAppBarState extends State<FocusAwareAppBar>
 {
   bool focused = false;
   late FocusNode _settingsFocusNode;
+  late FocusNode _inputsFocusNode;
+  late FocusNode _notificationsFocusNode;
+  late FocusNode _weatherFocusNode;
+
+  FocusNode get settingsFocusNode => _settingsFocusNode;
+  FocusNode get inputsFocusNode => _inputsFocusNode;
+  FocusNode get notificationsFocusNode => _notificationsFocusNode;
+  FocusNode get weatherFocusNode => _weatherFocusNode;
 
   @override
   void initState() {
     super.initState();
     _settingsFocusNode = FocusNode();
+    _inputsFocusNode = FocusNode();
+    _notificationsFocusNode = FocusNode();
+    _weatherFocusNode = FocusNode();
   }
 
   @override
   void dispose() {
     _settingsFocusNode.dispose();
+    _inputsFocusNode.dispose();
+    _notificationsFocusNode.dispose();
+    _weatherFocusNode.dispose();
     super.dispose();
   }
 
@@ -67,6 +87,10 @@ class FocusAwareAppBarState extends State<FocusAwareAppBar>
       },
       child: RepaintBoundary(
         child: AppBar(
+          // Line the settings glyph up with the left edge of the app tiles below
+          // (sections indent 16 + 8 card margin + 8 tile inset = 32dp; the icon
+          // button adds 4 padding + 2 border + 2 glyph inset, so start at 24).
+          titleSpacing: 24,
           elevation: 0,
           scrolledUnderElevation: 0,
           backgroundColor: Colors.transparent,
@@ -80,14 +104,77 @@ class FocusAwareAppBarState extends State<FocusAwareAppBar>
                 focusNode: _settingsFocusNode,
                 onPressed: () => showDialog(context: context, builder: (_) => const SettingsPanel()),
               ),
+              Selector<SettingsService, bool>(
+                selector: (_, settings) => settings.showInputsWidgetInStatusBar,
+                builder: (context, showInputs, _) => showInputs
+                  ? Consumer<TvInputsService>(
+                      builder: (context, tvInputsService, _) {
+                        if (tvInputsService.hasInputs) {
+                          return Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const SizedBox(width: 16),
+                              _FocusableIconButton(
+                                icon: Icons.tv_outlined,
+                                focusNode: _inputsFocusNode,
+                                onPressed: () => showDialog(
+                                  context: context,
+                                  builder: (_) => const InputsPanel(),
+                                ),
+                              ),
+                            ],
+                          );
+                        }
+                        return const SizedBox.shrink();
+                      },
+                    )
+                  : const SizedBox.shrink(),
+              ),
+              Selector<SettingsService, (bool, bool)>(
+                selector: (_, settings) => (
+                  settings.showNotificationsWidgetInStatusBar,
+                  settings.autoHideNotificationsWidget
+                ),
+                builder: (context, settingsState, _) {
+                  final (showNotifications, autoHide) = settingsState;
+                  return showNotifications
+                    ? Consumer<NotificationsService>(
+                        builder: (context, notificationsService, _) {
+                          if (notificationsService.hasPermission) {
+                            final count = notificationsService.notifications.length;
+                            if (autoHide && count == 0) {
+                              return const SizedBox.shrink();
+                            }
+                            return Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const SizedBox(width: 16),
+                                _FocusableIconButton(
+                                  icon: count > 0 ? Icons.notifications_active_outlined : Icons.notifications_outlined,
+                                  focusNode: _notificationsFocusNode,
+                                  badgeCount: count,
+                                  onPressed: () => showDialog(
+                                    context: context,
+                                    builder: (_) => const NotificationsPanel(),
+                                  ),
+                                ),
+                              ],
+                            );
+                          }
+                          return const SizedBox.shrink();
+                        },
+                      )
+                    : const SizedBox.shrink();
+                },
+              ),
               const SizedBox(width: 16),
               // Network indicator (conditionally shown)
               Selector<SettingsService, bool>(
                 selector: (_, settings) => settings.showNetworkIndicatorInStatusBar,
                 builder: (context, showNetwork, _) => showNetwork
-                  ? Padding(
-                      padding: const EdgeInsets.only(right: 12),
-                      child: _FocusableNetworkWidget(),
+                  ? const Padding(
+                      padding: EdgeInsets.only(right: 12),
+                      child: NetworkWidget(),
                     )
                   : const SizedBox.shrink(),
               ),
@@ -95,62 +182,111 @@ class FocusAwareAppBarState extends State<FocusAwareAppBar>
               Selector<SettingsService, bool>(
                 selector: (_, settings) => settings.showDataWidgetInStatusBar,
                 builder: (context, showData, _) => showData
-                  ? const DailyDataUsageWidget()
+                  ? Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.3),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.12),
+                          width: 1,
+                        ),
+                      ),
+                      child: const DailyDataUsageWidget(),
+                    )
                   : const SizedBox.shrink(),
               ),
             ],
           ),
-          // Right side: Date/Time only
+          // Right side: Weather and Date/Time
           actions: [
             Padding(
               padding: const EdgeInsets.only(left: 16, right: 32),
-              child: Selector<SettingsService,
-                  ({
-                    bool showDateInStatusBar,
-                    bool showTimeInStatusBar,
-                    String dateFormat,
-                    String timeFormat })>(
-                selector: (context, service) => (
-                showDateInStatusBar: service.showDateInStatusBar,
-                showTimeInStatusBar: service.showTimeInStatusBar,
-                dateFormat: service.dateFormat,
-                timeFormat: service.timeFormat),
-                builder: (context, dateTimeSettings, _) {
-                  // Define standard text style
-                  const textStyle = TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w400,
-                    color: Colors.white,
-                    shadows: [
-                      Shadow(color: Colors.black54, offset: Offset(0, 2), blurRadius: 4)
-                    ],
-                  );
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Consumer<WeatherService>(
+                    builder: (context, weatherService, _) {
+                      return Selector<SettingsService, bool>(
+                        selector: (_, settings) => settings.showWeatherInStatusBar,
+                        builder: (context, showWeather, _) {
+                          if (showWeather && weatherService.hasWeather) {
+                            return Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                WeatherStatusBarWidget(focusNode: _weatherFocusNode),
+                                const SizedBox(width: 12),
+                              ],
+                            );
+                          }
+                          return const SizedBox.shrink();
+                        },
+                      );
+                    },
+                  ),
+                  Selector<SettingsService,
+                      ({
+                        bool showDateInStatusBar,
+                        bool showTimeInStatusBar,
+                        String dateFormat,
+                        String timeFormat })>(
+                    selector: (context, service) => (
+                    showDateInStatusBar: service.showDateInStatusBar,
+                    showTimeInStatusBar: service.showTimeInStatusBar,
+                    dateFormat: service.dateFormat,
+                    timeFormat: service.timeFormat),
+                    builder: (context, dateTimeSettings, _) {
+                      // Define standard text style
+                      const textStyle = TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w400,
+                        color: Colors.white,
+                        shadows: [
+                          Shadow(color: Colors.black54, offset: Offset(0, 2), blurRadius: 4)
+                        ],
+                      );
 
-                  return Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Date
-                      if (dateTimeSettings.showDateInStatusBar)
-                        DateTimeWidget(
-                          dateTimeSettings.dateFormat,
-                          key: const Key("statusbar_date"),
-                          updateInterval: const Duration(minutes: 1),
-                          textStyle: textStyle,
-                        ),
-                      
-                      if (dateTimeSettings.showDateInStatusBar && dateTimeSettings.showTimeInStatusBar)
-                          const SizedBox(width: 16),
+                      if (!dateTimeSettings.showDateInStatusBar && !dateTimeSettings.showTimeInStatusBar) {
+                        return const SizedBox.shrink();
+                      }
 
-                      // Clock
-                      if (dateTimeSettings.showTimeInStatusBar)
-                        DateTimeWidget(
-                          dateTimeSettings.timeFormat,
-                          key: const Key("statusbar_clock"),
-                          textStyle: textStyle.copyWith(fontWeight: FontWeight.bold),
+                      return Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.3),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.12),
+                            width: 1,
+                          ),
                         ),
-                    ]
-                  );
-                },
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // Date
+                            if (dateTimeSettings.showDateInStatusBar)
+                              DateTimeWidget(
+                                dateTimeSettings.dateFormat,
+                                key: const Key("statusbar_date"),
+                                textStyle: textStyle,
+                              ),
+                            
+                            if (dateTimeSettings.showDateInStatusBar && dateTimeSettings.showTimeInStatusBar)
+                                const SizedBox(width: 12),
+
+                            // Clock
+                            if (dateTimeSettings.showTimeInStatusBar)
+                              DateTimeWidget(
+                                dateTimeSettings.timeFormat,
+                                key: const Key("statusbar_clock"),
+                                textStyle: textStyle.copyWith(fontWeight: FontWeight.bold),
+                              ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ],
               ),
             ),
           ],
@@ -165,8 +301,9 @@ class _FocusableIconButton extends StatefulWidget {
   final IconData icon;
   final VoidCallback onPressed;
   final FocusNode? focusNode;
+  final int badgeCount;
 
-  const _FocusableIconButton({required this.icon, required this.onPressed, this.focusNode});
+  const _FocusableIconButton({required this.icon, required this.onPressed, this.focusNode, this.badgeCount = 0});
 
   @override
   State<_FocusableIconButton> createState() => _FocusableIconButtonState();
@@ -187,54 +324,44 @@ class _FocusableIconButtonState extends State<_FocusableIconButton> {
         onFocusChange: (hasFocus) => setState(() => _focused = hasFocus),
         child: InkWell(
           onTap: widget.onPressed,
+          canRequestFocus: false,
+          focusColor: Colors.transparent,
+          hoverColor: Colors.transparent,
+          highlightColor: Colors.transparent,
           borderRadius: BorderRadius.circular(8),
           child: Container(
             padding: const EdgeInsets.all(4),  // Match network indicator padding
             decoration: BoxDecoration(
+              color: _focused ? Colors.black.withOpacity(0.3) : Colors.transparent,
               borderRadius: BorderRadius.circular(8),
-              border: _focused
-                ? Border.all(color: Theme.of(context).colorScheme.primary, width: 2)
-                : null,
+              // Always reserve the border width: a BoxDecoration border adds to the
+              // Container's padding, so toggling it between null and 2px would resize
+              // the button and shift its siblings horizontally on every focus change.
+              border: Border.all(
+                color: _focused ? Theme.of(context).colorScheme.primary : Colors.transparent,
+                width: 2,
+              ),
               boxShadow: _focused
                 ? const [BoxShadow(color: Colors.black54, blurRadius: 8, spreadRadius: 1)]
                 : null,
             ),
-            child: Icon(widget.icon,
-              shadows: const [
-                Shadow(color: Colors.black54, blurRadius: 8, offset: Offset(0, 2))
-              ],
-            ),
+            child: widget.badgeCount > 0
+              ? Badge(
+                  label: Text(widget.badgeCount.toString(), style: const TextStyle(color: Colors.white)),
+                  backgroundColor: Colors.red,
+                  child: Icon(widget.icon,
+                    shadows: const [
+                      Shadow(color: Colors.black54, blurRadius: 8, offset: Offset(0, 2))
+                    ],
+                  ),
+                )
+              : Icon(widget.icon,
+                  shadows: const [
+                    Shadow(color: Colors.black54, blurRadius: 8, offset: Offset(0, 2))
+                  ],
+                ),
           ),
         ),
-      ),
-    );
-  }
-}
-
-/// Network widget with consistent focus indicator
-class _FocusableNetworkWidget extends StatefulWidget {
-  @override
-  State<_FocusableNetworkWidget> createState() => _FocusableNetworkWidgetState();
-}
-
-class _FocusableNetworkWidgetState extends State<_FocusableNetworkWidget> {
-  bool _focused = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return Focus(
-      onFocusChange: (hasFocus) => setState(() => _focused = hasFocus),
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(8),
-          border: _focused
-            ? Border.all(color: Theme.of(context).colorScheme.primary, width: 2)
-            : null,
-          boxShadow: _focused
-            ? const [BoxShadow(color: Colors.black54, blurRadius: 8, spreadRadius: 1)]
-            : null,
-        ),
-        child: const NetworkWidget(),
       ),
     );
   }

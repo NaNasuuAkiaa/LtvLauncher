@@ -29,12 +29,23 @@ import 'package:flauncher/widgets/settings/back_button_action_page.dart';
 import 'package:flauncher/widgets/settings/date_time_format_page.dart';
 import 'package:flauncher/widgets/settings/app_details_page.dart';
 import 'package:flauncher/widgets/settings/accent_color_page.dart';
-import 'package:flauncher/widgets/settings/brightness_settings_page.dart';
 import 'package:flauncher/widgets/settings/misc_panel_page.dart';
 import 'package:flauncher/widgets/settings/interface_settings_page.dart';
 import 'package:flauncher/widgets/settings/general_settings_page.dart';
 import 'package:flauncher/widgets/settings/screensaver_clock_style_page.dart';
+import 'package:flauncher/widgets/settings/screensaver_animation_page.dart';
 import 'package:flauncher/widgets/settings/themes_page.dart';
+import 'package:flauncher/widgets/settings/accessibility_page.dart';
+import 'package:flauncher/widgets/settings/backup_restore_page.dart';
+import 'package:flauncher/widgets/settings/app_language_page.dart';
+import 'package:flauncher/widgets/settings/blocked_notifications_page.dart';
+import 'package:flauncher/widgets/settings/display_settings_page.dart';
+import 'package:flauncher/widgets/settings/notifications_settings_page.dart';
+import 'package:flauncher/widgets/settings/continue_watching_settings_page.dart';
+import 'package:flauncher/widgets/settings/continue_watching_card_size_page.dart';
+import 'package:flauncher/widgets/settings/continue_watching_max_items_page.dart';
+import 'package:flauncher/widgets/settings/continue_watching_hide_threshold_page.dart';
+import 'package:flauncher/widgets/settings/continue_watching_apps_page.dart';
 import 'package:flauncher/models/app.dart';
 import 'package:flutter/material.dart';
 
@@ -52,10 +63,20 @@ class _SettingsPanelState extends State<SettingsPanel> {
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async => !await _navigatorKey.currentState!.maybePop(),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        final navigator = _navigatorKey.currentState;
+        if (navigator != null && await navigator.maybePop()) {
+          return;
+        }
+        if (context.mounted) {
+          Navigator.of(context).pop();
+        }
+      },
       child: Scaffold(
-        backgroundColor: Colors.black54, // Dim the background
+        backgroundColor: Colors.black.withOpacity(0.70), // Dim the background
         body: Stack(
           children: [
             // Tap outside to close
@@ -101,12 +122,34 @@ class _SettingsPanelState extends State<SettingsPanel> {
                       return _FastPageRoute(builder: (_) => MiscPanelPage());
                     case ScreensaverClockStylePage.routeName:
                       return _FastPageRoute(builder: (_) => const ScreensaverClockStylePage());
+                    case ScreensaverAnimationPage.routeName:
+                      return _FastPageRoute(builder: (_) => const ScreensaverAnimationPage());
                     case ThemesPage.routeName:
                       return _FastPageRoute(builder: (_) => const ThemesPage());
                     case AccentColorPage.routeName:
                       return _FastPageRoute(builder: (_) => AccentColorPage());
-                    case BrightnessSettingsPage.routeName:
-                      return _FastPageRoute(builder: (_) => BrightnessSettingsPage());
+                    case AccessibilityPage.routeName:
+                      return _FastPageRoute(builder: (_) => const AccessibilityPage());
+                    case BackupRestorePage.routeName:
+                      return _FastPageRoute(builder: (_) => const BackupRestorePage());
+                    case AppLanguagePage.routeName:
+                      return _FastPageRoute(builder: (_) => const AppLanguagePage());
+                    case BlockedNotificationsPage.routeName:
+                      return _FastPageRoute(builder: (_) => const BlockedNotificationsPage());
+                    case DisplaySettingsPage.routeName:
+                      return _FastPageRoute(builder: (_) => const DisplaySettingsPage());
+                    case NotificationsSettingsPage.routeName:
+                      return _FastPageRoute(builder: (_) => const NotificationsSettingsPage());
+                    case ContinueWatchingSettingsPage.routeName:
+                      return _FastPageRoute(builder: (_) => const ContinueWatchingSettingsPage());
+                    case ContinueWatchingCardSizePage.routeName:
+                      return _FastPageRoute(builder: (_) => const ContinueWatchingCardSizePage());
+                    case ContinueWatchingMaxItemsPage.routeName:
+                      return _FastPageRoute(builder: (_) => const ContinueWatchingMaxItemsPage());
+                    case ContinueWatchingHideThresholdPage.routeName:
+                      return _FastPageRoute(builder: (_) => const ContinueWatchingHideThresholdPage());
+                    case ContinueWatchingAppsPage.routeName:
+                      return _FastPageRoute(builder: (_) => const ContinueWatchingAppsPage());
                     case AppDetailsPage.routeName:
                       return _FastPageRoute(
                           builder: (_) => AppDetailsPage(application: settings.arguments as App));
@@ -123,14 +166,12 @@ class _SettingsPanelState extends State<SettingsPanel> {
   }
 }
 
-/// A faster page route with a 150ms slide transition instead of
-/// the default 300ms Material transition.
-class _FastPageRoute<T> extends MaterialPageRoute<T> {
-  _FastPageRoute({required super.builder});
-
-  @override
-  Duration get transitionDuration => const Duration(milliseconds: 150);
-
-  @override
-  Duration get reverseTransitionDuration => const Duration(milliseconds: 120);
+/// A snappy page route with zero transition delay for instant, glitch-free TV navigation.
+class _FastPageRoute<T> extends PageRouteBuilder<T> {
+  _FastPageRoute({required Widget Function(BuildContext) builder})
+      : super(
+          pageBuilder: (context, _, __) => builder(context),
+          transitionDuration: Duration.zero,
+          reverseTransitionDuration: Duration.zero,
+        );
 }

@@ -1,5 +1,3 @@
-import 'dart:typed_data';
-
 import 'package:flauncher/models/app.dart';
 import 'package:flauncher/models/category.dart';
 import 'package:flauncher/providers/apps_service.dart';
@@ -12,6 +10,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:provider/provider.dart';
 
+import 'package:flauncher/providers/notifications_service.dart';
 import '../mocks.dart';
 import '../mocks.mocks.dart';
 import 'package:transparent_image/transparent_image.dart';
@@ -22,6 +21,7 @@ import 'package:flauncher/l10n/app_localizations.dart';
 void main() {
   late MockAppsService mockAppsService;
   late MockSettingsService mockSettingsService;
+  late MockNotificationsService mockNotificationsService;
   late App mockApp;
   late Category mockCategory;
 
@@ -36,6 +36,7 @@ void main() {
     when(mockAppsService.getAppBanner(any)).thenAnswer((_) async => kTransparentImage);
     when(mockAppsService.hasCustomBanner(any)).thenAnswer((_) async => false);
     when(mockAppsService.pendingReorderFocusPackage).thenReturn(null);
+    when(mockAppsService.pendingReorderFocusIndex).thenReturn(null);
     when(mockAppsService.openAppInfo(any)).thenAnswer((_) async => {});
     when(mockAppsService.isAppInFavorites(any)).thenReturn(false);
 
@@ -45,6 +46,8 @@ void main() {
     when(mockSettingsService.appHighlightAnimationEnabled).thenReturn(true);
     when(mockSettingsService.appSelectorTransitionAnimationEnabled).thenReturn(true);
     when(mockSettingsService.accentColorHex).thenReturn('000000');
+    mockNotificationsService = MockNotificationsService();
+    when(mockNotificationsService.getNotificationCount(any)).thenReturn(0);
   });
 
   Widget createWidgetUnderTest({
@@ -55,6 +58,7 @@ void main() {
       providers: [
         ChangeNotifierProvider<AppsService>.value(value: mockAppsService),
         ChangeNotifierProvider<SettingsService>.value(value: mockSettingsService),
+        ChangeNotifierProvider<NotificationsService>.value(value: mockNotificationsService),
       ],
       child: Directionality(
         textDirection: TextDirection.ltr,
@@ -126,14 +130,10 @@ void main() {
       tester.view.resetDevicePixelRatio();
     });
 
-    AxisDirection? movedDirection;
-    await tester.pumpWidget(createWidgetUnderTest(
-      onMove: (dir) => movedDirection = dir,
-    ));
+    await tester.pumpWidget(createWidgetUnderTest());
     await tester.pumpAndSettle();
 
     // Use a small hack to trigger the private state _moving logic so we can test the public callbacks without relying on the complex private dialog and nested navigator hierarchy logic
-    final state = tester.state(find.byType(AppCard)) as dynamic;
 
     // Setting _moving directly fails but we can just use the exposed callback to fake it
     // Or we just test bump navigation
@@ -154,13 +154,54 @@ void main() {
       tester.view.resetDevicePixelRatio();
     });
 
-    bool moveEnded = false;
-    await tester.pumpWidget(createWidgetUnderTest(
-      onMoveEnd: () => moveEnded = true,
-    ));
+    await tester.pumpWidget(createWidgetUnderTest());
     await tester.pumpAndSettle();
 
     // Skip testing private move state since it's hard to trigger without full framework Context.
     expect(true, isTrue);
+  });
+
+  testWidgets('AppCard launches application with Enter key', (WidgetTester tester) async {
+    await tester.pumpWidget(createWidgetUnderTest());
+    await tester.pumpAndSettle();
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pump(const Duration(milliseconds: 200));
+
+    verify(mockAppsService.launchApp(mockApp)).called(1);
+    await tester.pump(const Duration(milliseconds: 600));
+  });
+
+  testWidgets('AppCard launches application with NumpadEnter key (TV Box remote)', (WidgetTester tester) async {
+    await tester.pumpWidget(createWidgetUnderTest());
+    await tester.pumpAndSettle();
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.numpadEnter);
+    await tester.pump(const Duration(milliseconds: 200));
+
+    verify(mockAppsService.launchApp(mockApp)).called(1);
+    await tester.pump(const Duration(milliseconds: 600));
+  });
+
+  testWidgets('AppCard launches application with Select key (DPad Center)', (WidgetTester tester) async {
+    await tester.pumpWidget(createWidgetUnderTest());
+    await tester.pumpAndSettle();
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.select);
+    await tester.pump(const Duration(milliseconds: 200));
+
+    verify(mockAppsService.launchApp(mockApp)).called(1);
+    await tester.pump(const Duration(milliseconds: 600));
+  });
+
+  testWidgets('AppCard launches application with Gamepad A and Gamepad Select', (WidgetTester tester) async {
+    await tester.pumpWidget(createWidgetUnderTest());
+    await tester.pumpAndSettle();
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.gameButtonA);
+    await tester.pump(const Duration(milliseconds: 200));
+
+    verify(mockAppsService.launchApp(mockApp)).called(1);
+    await tester.pump(const Duration(milliseconds: 600));
   });
 }

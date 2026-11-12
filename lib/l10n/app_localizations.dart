@@ -5,8 +5,22 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/intl.dart' as intl;
 
+import 'app_localizations_ar.dart';
+import 'app_localizations_de.dart';
 import 'app_localizations_en.dart';
 import 'app_localizations_es.dart';
+import 'app_localizations_fr.dart';
+import 'app_localizations_he.dart';
+import 'app_localizations_hi.dart';
+import 'app_localizations_it.dart';
+import 'app_localizations_ja.dart';
+import 'app_localizations_ko.dart';
+import 'app_localizations_pt.dart';
+import 'app_localizations_ru.dart';
+import 'app_localizations_sl.dart';
+import 'app_localizations_tr.dart';
+import 'app_localizations_uk.dart';
+import 'app_localizations_zh.dart';
 
 // ignore_for_file: type=lint
 
@@ -62,8 +76,7 @@ import 'app_localizations_es.dart';
 /// be consistent with the languages listed in the AppLocalizations.supportedLocales
 /// property.
 abstract class AppLocalizations {
-  AppLocalizations(String locale)
-      : localeName = intl.Intl.canonicalizedLocale(locale.toString());
+  AppLocalizations(String locale) : localeName = intl.Intl.canonicalizedLocale(locale.toString());
 
   final String localeName;
 
@@ -71,8 +84,7 @@ abstract class AppLocalizations {
     return Localizations.of<AppLocalizations>(context, AppLocalizations);
   }
 
-  static const LocalizationsDelegate<AppLocalizations> delegate =
-      _AppLocalizationsDelegate();
+  static const LocalizationsDelegate<AppLocalizations> delegate = _AppLocalizationsDelegate();
 
   /// A list of this localizations delegate along with the default localizations
   /// delegates.
@@ -84,8 +96,7 @@ abstract class AppLocalizations {
   /// Additional delegates can be added by appending to this list in
   /// MaterialApp. This list does not have to be used at all if a custom list
   /// of delegates is preferred or required.
-  static const List<LocalizationsDelegate<dynamic>> localizationsDelegates =
-      <LocalizationsDelegate<dynamic>>[
+  static const List<LocalizationsDelegate<dynamic>> localizationsDelegates = <LocalizationsDelegate<dynamic>>[
     delegate,
     GlobalMaterialLocalizations.delegate,
     GlobalCupertinoLocalizations.delegate,
@@ -94,8 +105,22 @@ abstract class AppLocalizations {
 
   /// A list of this localizations delegate's supported locales.
   static const List<Locale> supportedLocales = <Locale>[
+    Locale('ar'),
+    Locale('de'),
     Locale('en'),
-    Locale('es')
+    Locale('es'),
+    Locale('fr'),
+    Locale('he'),
+    Locale('hi'),
+    Locale('it'),
+    Locale('ja'),
+    Locale('ko'),
+    Locale('pt'),
+    Locale('ru'),
+    Locale('sl'),
+    Locale('tr'),
+    Locale('uk'),
+    Locale('zh')
   ];
 
   /// No description provided for @aboutFlauncher.
@@ -434,6 +459,12 @@ abstract class AppLocalizations {
   /// **'Show category titles'**
   String get showCategoryTitles;
 
+  /// No description provided for @showCategoryAppCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Show app count in categories'**
+  String get showCategoryAppCount;
+
   /// No description provided for @themes.
   ///
   /// In en, this message translates to:
@@ -547,10 +578,603 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Pick night wallpaper'**
   String get pickNightWallpaper;
+
+  /// No description provided for @accessibility.
+  ///
+  /// In en, this message translates to:
+  /// **'Accessibility'**
+  String get accessibility;
+
+  /// No description provided for @defaultLauncherIsDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'LTvLauncher is the default launcher'**
+  String get defaultLauncherIsDefault;
+
+  /// No description provided for @defaultLauncherNotDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'LTvLauncher is not the default launcher'**
+  String get defaultLauncherNotDefault;
+
+  /// No description provided for @setAsDefaultLauncher.
+  ///
+  /// In en, this message translates to:
+  /// **'Set as default launcher'**
+  String get setAsDefaultLauncher;
+
+  /// No description provided for @defaultLauncherDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'When set as the default launcher, the Home button will always return to LTvLauncher. The TV will also boot directly into LTvLauncher.'**
+  String get defaultLauncherDescription;
+
+  /// No description provided for @inputs.
+  ///
+  /// In en, this message translates to:
+  /// **'Inputs'**
+  String get inputs;
+
+  /// No description provided for @inputSources.
+  ///
+  /// In en, this message translates to:
+  /// **'Input Sources'**
+  String get inputSources;
+
+  /// No description provided for @backupAndRestore.
+  ///
+  /// In en, this message translates to:
+  /// **'Backup & Restore'**
+  String get backupAndRestore;
+
+  /// No description provided for @exportBackup.
+  ///
+  /// In en, this message translates to:
+  /// **'Export Backup'**
+  String get exportBackup;
+
+  /// No description provided for @importBackup.
+  ///
+  /// In en, this message translates to:
+  /// **'Import Backup'**
+  String get importBackup;
+
+  /// No description provided for @exportSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Backup exported successfully to {path}'**
+  String exportSuccess(String path);
+
+  /// No description provided for @importSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Backup imported successfully'**
+  String get importSuccess;
+
+  /// No description provided for @importConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to import the backup? This will overwrite your current settings and layout.'**
+  String get importConfirm;
+
+  /// No description provided for @importError.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to import backup: {error}'**
+  String importError(String error);
+
+  /// No description provided for @exportError.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to export backup: {error}'**
+  String exportError(String error);
+
+  /// No description provided for @shareBackup.
+  ///
+  /// In en, this message translates to:
+  /// **'Share Backup'**
+  String get shareBackup;
+
+  /// No description provided for @shareBackupDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Share backup with other devices on local network'**
+  String get shareBackupDescription;
+
+  /// No description provided for @stopSharing.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop Sharing'**
+  String get stopSharing;
+
+  /// No description provided for @localNetworkSharingActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Local network sharing is active!'**
+  String get localNetworkSharingActive;
+
+  /// No description provided for @localNetworkSharingInstructions.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect another device to the same Wi-Fi network and open the following URL in a web browser:'**
+  String get localNetworkSharingInstructions;
+
+  /// No description provided for @localNetworkSharingDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Here you can download your TV settings/layout or upload a backup file back to this TV.'**
+  String get localNetworkSharingDetails;
+
+  /// No description provided for @failedToStartServer.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to start sharing server: {error}'**
+  String failedToStartServer(String error);
+
+  /// No description provided for @notificationBell.
+  ///
+  /// In en, this message translates to:
+  /// **'Notification Bell'**
+  String get notificationBell;
+
+  /// No description provided for @autoHideNotificationBell.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto-hide Notification Bell'**
+  String get autoHideNotificationBell;
+
+  /// No description provided for @continueWatching.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue Watching'**
+  String get continueWatching;
+
+  /// No description provided for @showContinueWatchingOnHome.
+  ///
+  /// In en, this message translates to:
+  /// **'Show Continue Watching on Home'**
+  String get showContinueWatchingOnHome;
+
+  /// No description provided for @permissionDeniedContinueWatching.
+  ///
+  /// In en, this message translates to:
+  /// **'Permission required to show Continue Watching'**
+  String get permissionDeniedContinueWatching;
+
+  /// No description provided for @interface.
+  ///
+  /// In en, this message translates to:
+  /// **'Interface'**
+  String get interface;
+
+  /// No description provided for @system.
+  ///
+  /// In en, this message translates to:
+  /// **'System'**
+  String get system;
+
+  /// No description provided for @accentColor.
+  ///
+  /// In en, this message translates to:
+  /// **'Accent Color'**
+  String get accentColor;
+
+  /// No description provided for @miscellaneous.
+  ///
+  /// In en, this message translates to:
+  /// **'Miscellaneous'**
+  String get miscellaneous;
+
+  /// No description provided for @brightnessScheduler.
+  ///
+  /// In en, this message translates to:
+  /// **'Brightness Scheduler'**
+  String get brightnessScheduler;
+
+  /// No description provided for @screensaverSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Screensaver Settings'**
+  String get screensaverSettings;
+
+  /// No description provided for @screensaverClockStyle.
+  ///
+  /// In en, this message translates to:
+  /// **'Screensaver Clock Style'**
+  String get screensaverClockStyle;
+
+  /// No description provided for @screensaverAnimation.
+  ///
+  /// In en, this message translates to:
+  /// **'Screensaver Animation'**
+  String get screensaverAnimation;
+
+  /// No description provided for @screensaverAnimationBounce.
+  ///
+  /// In en, this message translates to:
+  /// **'DVD Bounce'**
+  String get screensaverAnimationBounce;
+
+  /// No description provided for @screensaverAnimationBounceSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Classic floating DVD logo bounce with wall color shifts'**
+  String get screensaverAnimationBounceSubtitle;
+
+  /// No description provided for @screensaverAnimationFade.
+  ///
+  /// In en, this message translates to:
+  /// **'Minimal Fade'**
+  String get screensaverAnimationFade;
+
+  /// No description provided for @screensaverAnimationFadeSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Smooth fade out and in at new positions'**
+  String get screensaverAnimationFadeSubtitle;
+
+  /// No description provided for @screensaverAnimationScatter.
+  ///
+  /// In en, this message translates to:
+  /// **'Character Scatter'**
+  String get screensaverAnimationScatter;
+
+  /// No description provided for @screensaverAnimationScatterSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Playful bouncing characters'**
+  String get screensaverAnimationScatterSubtitle;
+
+  /// No description provided for @dataUsagePeriod.
+  ///
+  /// In en, this message translates to:
+  /// **'Data Usage Period'**
+  String get dataUsagePeriod;
+
+  /// No description provided for @notificationAccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Notification Access'**
+  String get notificationAccess;
+
+  /// No description provided for @granted.
+  ///
+  /// In en, this message translates to:
+  /// **'Granted'**
+  String get granted;
+
+  /// No description provided for @permissionRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Permission Required'**
+  String get permissionRequired;
+
+  /// No description provided for @systemWidePopupAlert.
+  ///
+  /// In en, this message translates to:
+  /// **'System-wide Popup Alert'**
+  String get systemWidePopupAlert;
+
+  /// No description provided for @overlayPermissionRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Overlay Permission Required'**
+  String get overlayPermissionRequired;
+
+  /// No description provided for @enabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Enabled'**
+  String get enabled;
+
+  /// No description provided for @disabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Disabled'**
+  String get disabled;
+
+  /// No description provided for @showAppNamesBelowIcons.
+  ///
+  /// In en, this message translates to:
+  /// **'Show App Names Below Icons'**
+  String get showAppNamesBelowIcons;
+
+  /// No description provided for @dataUsage.
+  ///
+  /// In en, this message translates to:
+  /// **'Data Usage'**
+  String get dataUsage;
+
+  /// No description provided for @networkIndicator.
+  ///
+  /// In en, this message translates to:
+  /// **'Network Indicator'**
+  String get networkIndicator;
+
+  /// No description provided for @homeButtonFix.
+  ///
+  /// In en, this message translates to:
+  /// **'Home Button Fix (Google TV)'**
+  String get homeButtonFix;
+
+  /// No description provided for @startOnBoot.
+  ///
+  /// In en, this message translates to:
+  /// **'Start on boot (Google TV / Fire TV)'**
+  String get startOnBoot;
+
+  /// No description provided for @appLanguage.
+  ///
+  /// In en, this message translates to:
+  /// **'Language'**
+  String get appLanguage;
+
+  /// No description provided for @systemDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'System Default'**
+  String get systemDefault;
+
+  /// No description provided for @english.
+  ///
+  /// In en, this message translates to:
+  /// **'English'**
+  String get english;
+
+  /// No description provided for @spanish.
+  ///
+  /// In en, this message translates to:
+  /// **'Spanish'**
+  String get spanish;
+
+  /// No description provided for @ukrainian.
+  ///
+  /// In en, this message translates to:
+  /// **'Ukrainian'**
+  String get ukrainian;
+
+  /// No description provided for @chinese.
+  ///
+  /// In en, this message translates to:
+  /// **'Chinese'**
+  String get chinese;
+
+  /// No description provided for @french.
+  ///
+  /// In en, this message translates to:
+  /// **'French'**
+  String get french;
+
+  /// No description provided for @german.
+  ///
+  /// In en, this message translates to:
+  /// **'German'**
+  String get german;
+
+  /// No description provided for @japanese.
+  ///
+  /// In en, this message translates to:
+  /// **'Japanese'**
+  String get japanese;
+
+  /// No description provided for @portuguese.
+  ///
+  /// In en, this message translates to:
+  /// **'Portuguese'**
+  String get portuguese;
+
+  /// No description provided for @russian.
+  ///
+  /// In en, this message translates to:
+  /// **'Russian'**
+  String get russian;
+
+  /// No description provided for @italian.
+  ///
+  /// In en, this message translates to:
+  /// **'Italian'**
+  String get italian;
+
+  /// No description provided for @hindi.
+  ///
+  /// In en, this message translates to:
+  /// **'Hindi'**
+  String get hindi;
+
+  /// No description provided for @korean.
+  ///
+  /// In en, this message translates to:
+  /// **'Korean'**
+  String get korean;
+
+  /// No description provided for @arabic.
+  ///
+  /// In en, this message translates to:
+  /// **'Arabic'**
+  String get arabic;
+
+  /// No description provided for @turkish.
+  ///
+  /// In en, this message translates to:
+  /// **'Turkish'**
+  String get turkish;
+
+  /// No description provided for @slovenian.
+  ///
+  /// In en, this message translates to:
+  /// **'Slovenian'**
+  String get slovenian;
+
+  /// No description provided for @hebrew.
+  ///
+  /// In en, this message translates to:
+  /// **'Hebrew'**
+  String get hebrew;
+
+  /// No description provided for @hidePersistentNotifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide Persistent Notifications'**
+  String get hidePersistentNotifications;
+
+  /// No description provided for @hidePersistentNotificationsDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide ongoing background service and system notifications'**
+  String get hidePersistentNotificationsDesc;
+
+  /// No description provided for @blockedNotificationApps.
+  ///
+  /// In en, this message translates to:
+  /// **'Blocked Apps'**
+  String get blockedNotificationApps;
+
+  /// No description provided for @blockAppNotifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Block Notifications'**
+  String get blockAppNotifications;
+
+  /// No description provided for @unblockAppNotifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Unblock Notifications'**
+  String get unblockAppNotifications;
+
+  /// No description provided for @noBlockedApps.
+  ///
+  /// In en, this message translates to:
+  /// **'No blocked apps'**
+  String get noBlockedApps;
+
+  /// No description provided for @persistentNotification.
+  ///
+  /// In en, this message translates to:
+  /// **'Persistent'**
+  String get persistentNotification;
+
+  /// No description provided for @unblockAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Unblock All'**
+  String get unblockAll;
+
+  /// No description provided for @weather.
+  ///
+  /// In en, this message translates to:
+  /// **'Weather'**
+  String get weather;
+
+  /// No description provided for @showWeatherWarnings.
+  ///
+  /// In en, this message translates to:
+  /// **'Show Weather & Rain Warnings'**
+  String get showWeatherWarnings;
+
+  /// No description provided for @temperatureUnit.
+  ///
+  /// In en, this message translates to:
+  /// **'Temperature Unit'**
+  String get temperatureUnit;
+
+  /// No description provided for @celsius.
+  ///
+  /// In en, this message translates to:
+  /// **'Celsius (°C)'**
+  String get celsius;
+
+  /// No description provided for @fahrenheit.
+  ///
+  /// In en, this message translates to:
+  /// **'Fahrenheit (°F)'**
+  String get fahrenheit;
+
+  /// No description provided for @breezyWeatherSetupHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Install Breezy Weather and enable \'Local data sharing\' / \'Gadgetbridge\' in its settings to see weather and rain warnings.'**
+  String get breezyWeatherSetupHint;
+
+  /// No description provided for @displayAndScreensaver.
+  ///
+  /// In en, this message translates to:
+  /// **'Display & Screensaver'**
+  String get displayAndScreensaver;
+
+  /// No description provided for @notifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get notifications;
+
+  /// No description provided for @continueWatchingDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Show recently watched movies and TV shows from supported apps on your home screen'**
+  String get continueWatchingDescription;
+
+  /// No description provided for @continueWatchingPermissionDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Special permission is required to read watch history from TV apps. You can grant it using the button below or via ADB:'**
+  String get continueWatchingPermissionDesc;
+
+  /// No description provided for @requestPermission.
+  ///
+  /// In en, this message translates to:
+  /// **'Request Permission'**
+  String get requestPermission;
+
+  /// No description provided for @dismiss.
+  ///
+  /// In en, this message translates to:
+  /// **'Dismiss'**
+  String get dismiss;
+
+  /// No description provided for @openApp.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get openApp;
+
+  /// No description provided for @notificationOptions.
+  ///
+  /// In en, this message translates to:
+  /// **'Notification Options'**
+  String get notificationOptions;
+
+  /// No description provided for @noBlockedAppsDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'All applications are currently allowed to show notifications'**
+  String get noBlockedAppsDesc;
+
+  /// No description provided for @notificationsAllowed.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications Allowed'**
+  String get notificationsAllowed;
+
+  /// No description provided for @notificationsBlocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications Blocked'**
+  String get notificationsBlocked;
+
+  /// No description provided for @dpadDismissHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Left: Dismiss • OK: Options'**
+  String get dpadDismissHint;
+
+  /// No description provided for @autoAddNewApps.
+  ///
+  /// In en, this message translates to:
+  /// **'Add newly installed apps to launcher'**
+  String get autoAddNewApps;
 }
 
-class _AppLocalizationsDelegate
-    extends LocalizationsDelegate<AppLocalizations> {
+class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
   const _AppLocalizationsDelegate();
 
   @override
@@ -559,25 +1183,39 @@ class _AppLocalizationsDelegate
   }
 
   @override
-  bool isSupported(Locale locale) =>
-      <String>['en', 'es'].contains(locale.languageCode);
+  bool isSupported(Locale locale) => <String>['ar', 'de', 'en', 'es', 'fr', 'he', 'hi', 'it', 'ja', 'ko', 'pt', 'ru', 'sl', 'tr', 'uk', 'zh'].contains(locale.languageCode);
 
   @override
   bool shouldReload(_AppLocalizationsDelegate old) => false;
 }
 
 AppLocalizations lookupAppLocalizations(Locale locale) {
+
+
   // Lookup logic when only language code is specified.
   switch (locale.languageCode) {
-    case 'en':
-      return AppLocalizationsEn();
-    case 'es':
-      return AppLocalizationsEs();
+    case 'ar': return AppLocalizationsAr();
+    case 'de': return AppLocalizationsDe();
+    case 'en': return AppLocalizationsEn();
+    case 'es': return AppLocalizationsEs();
+    case 'fr': return AppLocalizationsFr();
+    case 'he': return AppLocalizationsHe();
+    case 'hi': return AppLocalizationsHi();
+    case 'it': return AppLocalizationsIt();
+    case 'ja': return AppLocalizationsJa();
+    case 'ko': return AppLocalizationsKo();
+    case 'pt': return AppLocalizationsPt();
+    case 'ru': return AppLocalizationsRu();
+    case 'sl': return AppLocalizationsSl();
+    case 'tr': return AppLocalizationsTr();
+    case 'uk': return AppLocalizationsUk();
+    case 'zh': return AppLocalizationsZh();
   }
 
   throw FlutterError(
-      'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
-      'an issue with the localizations generation tool. Please file an issue '
-      'on GitHub with a reproducible sample app and the gen-l10n configuration '
-      'that was used.');
+    'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
+    'an issue with the localizations generation tool. Please file an issue '
+    'on GitHub with a reproducible sample app and the gen-l10n configuration '
+    'that was used.'
+  );
 }

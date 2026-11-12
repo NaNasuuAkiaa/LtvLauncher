@@ -24,14 +24,15 @@ import 'package:flauncher/providers/apps_service.dart';
 import 'package:flauncher/providers/settings_service.dart';
 import 'package:flauncher/widgets/application_info_panel.dart';
 import 'package:flauncher/widgets/focus_keyboard_listener.dart';
+import 'package:flauncher/widgets/app_card_keys.dart';
+import 'package:flauncher/providers/launcher_state.dart';
+import 'package:flauncher/providers/notifications_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../models/app.dart';
 import '../models/category.dart';
-
-const _validationKeys = [LogicalKeyboardKey.select, LogicalKeyboardKey.enter, LogicalKeyboardKey.gameButtonA];
 
 class AppCard extends StatefulWidget
 {
@@ -40,6 +41,8 @@ class AppCard extends StatefulWidget
   final bool autofocus;
   final void Function(AxisDirection) onMove;
   final VoidCallback onMoveEnd;
+  final VoidCallback? onMoveCancel;
+  final int index;
   final bool handleUpNavigationToSettings;
   final bool isFirstInRow;
   final bool isLastInRow;
@@ -51,6 +54,8 @@ class AppCard extends StatefulWidget
     required this.autofocus,
     required this.onMove,
     required this.onMoveEnd,
+    this.onMoveCancel,
+    this.index = 0,
     this.handleUpNavigationToSettings = false,
     this.isFirstInRow = false,
     this.isLastInRow = false,
@@ -98,15 +103,20 @@ class _AppCardState extends State<AppCard> with TickerProviderStateMixin {
 
     // Check if we need to restore focus/reorder mode after a move
     WidgetsBinding.instance.addPostFrameCallback((_) {
+       if (!mounted) return;
        final appsService = Provider.of<AppsService>(context, listen: false);
        if (appsService.pendingReorderFocusPackage == widget.application.packageName &&
            appsService.pendingReorderFocusCategoryId == widget.category.id) {
           appsService.clearPendingReorderFocusPackage();
-          _focusNode.requestFocus();
+          if (!_focusNode.hasFocus) {
+            _focusNode.requestFocus();
+          }
           
-          setState(() {
-            _moving = true;
-          });
+          if (!_moving) {
+            setState(() {
+              _moving = true;
+            });
+          }
        }
     });
   }
@@ -117,11 +127,14 @@ class _AppCardState extends State<AppCard> with TickerProviderStateMixin {
     
     // Check for pending focus on update as well
     WidgetsBinding.instance.addPostFrameCallback((_) {
+       if (!mounted) return;
        final appsService = Provider.of<AppsService>(context, listen: false);
        if (appsService.pendingReorderFocusPackage == widget.application.packageName &&
            appsService.pendingReorderFocusCategoryId == widget.category.id) {
           appsService.clearPendingReorderFocusPackage();
-          _focusNode.requestFocus();
+          if (!_focusNode.hasFocus) {
+            _focusNode.requestFocus();
+          }
           
           if (!_moving) {
             setState(() {
@@ -157,6 +170,8 @@ class _AppCardState extends State<AppCard> with TickerProviderStateMixin {
   Widget build(BuildContext context) {
     final bool showAppNames = context.select<SettingsService, bool>((s) => s.showAppNamesBelowIcons);
     final String themes = context.select<SettingsService, String>((s) => s.themes);
+    final String accentColorHex = context.select<SettingsService, String>((s) => s.accentColorHex);
+    final Color accentColor = Color(int.tryParse('0xFF$accentColorHex') ?? 0xFF7C4DFF);
     final bool hideHighlightOutlineOnHomescreen = context.select<SettingsService, bool>((s) => s.hideHighlightOutlineOnHomescreen);
     final bool appSelectorTransitionAnimationEnabled = context.select<SettingsService, bool>((s) => s.appSelectorTransitionAnimationEnabled);
 
@@ -168,9 +183,21 @@ class _AppCardState extends State<AppCard> with TickerProviderStateMixin {
         borderRadius = BorderRadius.circular(16);
         innerBorderRadius = BorderRadius.circular(14);
         break;
+      case 'glow':
+        borderRadius = BorderRadius.circular(12);
+        innerBorderRadius = BorderRadius.circular(10);
+        break;
+      case 'squircle':
+        borderRadius = BorderRadius.circular(24);
+        innerBorderRadius = BorderRadius.circular(22);
+        break;
       case 'classic':
         borderRadius = BorderRadius.zero;
         innerBorderRadius = BorderRadius.zero;
+        break;
+      case 'minimal':
+        borderRadius = BorderRadius.circular(4);
+        innerBorderRadius = BorderRadius.circular(2);
         break;
       case 'capsule':
         borderRadius = BorderRadius.circular(100);
@@ -215,39 +242,84 @@ class _AppCardState extends State<AppCard> with TickerProviderStateMixin {
                         builder: (context, constraints) {
                           return AnimatedContainer(
                             duration: appSelectorTransitionAnimationEnabled ? const Duration(milliseconds: 200) : Duration.zero,
-                            curve: Curves.easeInOut,
+                            curve: Curves.easeOutBack,
                             transformAlignment: Alignment.center,
                             transform: _scaleTransform(context, themes, constraints.maxWidth),
                             child: Material(
                           borderRadius: borderRadius,
                           clipBehavior: Clip.antiAlias,
-                          elevation: shouldHighlight ? (themes == 'premium' ? 32 : (themes == 'classic' ? 8 : 16)) : 0,
-                          shadowColor: Colors.black,
+                          elevation: shouldHighlight ? (themes == 'minimal' ? 6 : (themes == 'classic' ? 8 : 16)) : 0,
+                          shadowColor: (shouldHighlight && themes == 'glow') ? accentColor.withOpacity(0.85) : Colors.black,
                           child: Stack(
                             fit: StackFit.expand,
                             children: [
-                              InkWell(
-                                focusNode: _focusNode,
-                                autofocus: widget.autofocus,
-                                focusColor: Colors.transparent,
-                                child: _appImage(),
-                                onTap: () => _onPressed(context, LogicalKeyboardKey.enter),
-                                onLongPress: () => _onLongPress(context, LogicalKeyboardKey.enter),
-                                onFocusChange: (focused) {
-                                  Scrollable.ensureVisible(
-                                    context,
-                                    // This specific alignment value is not only
-                                    // to center the focused card in the row while
-                                    // scrolling, but to prevent the topmost category
-                                    // title to be hidden by the content above it when
-                                    // scrolling from the app bar. How it relates to this,
-                                    // I don't know
-                                    alignment: 0.5,
-                                    curve: Curves.easeInOut,
-                                    duration: Duration(milliseconds: 100)
+                              Selector<NotificationsService, int>(
+                                selector: (_, service) => service.getNotificationCount(widget.application.packageName),
+                                builder: (context, count, _) {
+                                  if (count <= 0) return const SizedBox.shrink();
+                                  return Positioned(
+                                    top: 8,
+                                    right: 8,
+                                    child: IgnorePointer(
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: Colors.red,
+                                          borderRadius: BorderRadius.circular(10),
+                                          boxShadow: const [
+                                            BoxShadow(
+                                              color: Colors.black45,
+                                              blurRadius: 4,
+                                              offset: Offset(0, 2),
+                                            ),
+                                          ],
+                                        ),
+                                        constraints: const BoxConstraints(
+                                          minWidth: 20,
+                                          minHeight: 20,
+                                        ),
+                                        child: Center(
+                                          child: Text(
+                                            '$count',
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.bold,
+                                              height: 1.0,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
                                   );
                                 },
-
+                              ),
+                              Actions(
+                                actions: <Type, Action<Intent>>{
+                                  ActivateIntent: CallbackAction<ActivateIntent>(
+                                    onInvoke: (_) => _onPressed(context, LogicalKeyboardKey.enter),
+                                  ),
+                                  ButtonActivateIntent: CallbackAction<ButtonActivateIntent>(
+                                    onInvoke: (_) => _onPressed(context, LogicalKeyboardKey.enter),
+                                  ),
+                                },
+                                child: InkWell(
+                                  focusNode: _focusNode,
+                                  autofocus: widget.autofocus,
+                                  focusColor: Colors.transparent,
+                                  child: _appImage(),
+                                  onTap: () => _onPressed(context, LogicalKeyboardKey.enter),
+                                  onLongPress: () => _onLongPress(context, LogicalKeyboardKey.enter),
+                                  onFocusChange: (focused) {
+                                    if (!focused) return;
+                                    Scrollable.ensureVisible(
+                                      context,
+                                      alignment: 0.5,
+                                      curve: Curves.easeOutCubic,
+                                      duration: const Duration(milliseconds: 150),
+                                    );
+                                  },
+                                ),
                               ),
                               if (_moving) ..._arrows(),
                               IgnorePointer(
@@ -281,6 +353,44 @@ class _AppCardState extends State<AppCard> with TickerProviderStateMixin {
                                                 border: Border.all(
                                                   color: accentColor,
                                                   width: 4
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    }
+                                    if (themes == 'minimal') {
+                                      _animation.stop();
+                                      return IgnorePointer(
+                                        child: Stack(
+                                          fit: StackFit.expand,
+                                          children: [
+                                            Container(
+                                              decoration: BoxDecoration(
+                                                borderRadius: borderRadius,
+                                                border: Border.all(
+                                                  color: accentColor,
+                                                  width: 2
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    }
+                                    if (themes == 'glow') {
+                                      _animation.stop();
+                                      return IgnorePointer(
+                                        child: Stack(
+                                          fit: StackFit.expand,
+                                          children: [
+                                            Container(
+                                              decoration: BoxDecoration(
+                                                borderRadius: borderRadius,
+                                                border: Border.all(
+                                                  color: accentColor,
+                                                  width: 3
                                                 ),
                                               ),
                                             ),
@@ -419,7 +529,11 @@ class _AppCardState extends State<AppCard> with TickerProviderStateMixin {
           if (record == null) return const SizedBox();
 
           if (record.$1 == AppImageType.Banner) {
-            return Ink.image(image: record.$2, fit: BoxFit.cover);
+            return Ink.image(
+              image: record.$2,
+              fit: BoxFit.cover,
+              onImageError: (e, s) => debugPrint('AppCard banner image error: $e'),
+            );
           }
           else {
             return Padding(
@@ -431,6 +545,7 @@ class _AppCardState extends State<AppCard> with TickerProviderStateMixin {
                     child: Ink.image(
                       image: record.$2,
                       height: double.maxFinite,
+                      onImageError: (e, s) => debugPrint('AppCard icon image error: $e'),
                     ),
                   ),
                   Flexible(
@@ -466,13 +581,16 @@ class _AppCardState extends State<AppCard> with TickerProviderStateMixin {
         else {
           return const Padding(
             padding: EdgeInsets.all(8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                CircularProgressIndicator(),
-                SizedBox(height: 0, width: 16),
-                Text("Loading")
-              ],
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 0, width: 16),
+                  Text("Loading")
+                ],
+              ),
             ),
           );
         }
@@ -497,6 +615,10 @@ class _AppCardState extends State<AppCard> with TickerProviderStateMixin {
         scale = 1.15;
       } else if (theme == 'classic') {
         scale = 1.0;
+      } else if (theme == 'minimal') {
+        scale = 1.05;
+      } else if (theme == 'glow' || theme == 'squircle') {
+        scale = 1.12;
       } else {
         scale = 1.1;
       }
@@ -537,24 +659,28 @@ class _AppCardState extends State<AppCard> with TickerProviderStateMixin {
   }
 
   Widget _arrow(Alignment alignment, IconData icon, VoidCallback onTap) =>
-      Align(
-        alignment: alignment,
-        child: Ink(
-          decoration: ShapeDecoration(
-            color: Theme.of(context).primaryColor.withOpacity(0.8),
-            shape: CircleBorder()
-          ),
-          child: SizedBox(
-            height: 36,
-            width: 36,
-            child: IconButton(
-              icon: Icon(icon, size: 24),
-              onPressed: onTap,
-              padding: EdgeInsets.all(0)
+      ExcludeFocus(
+        child: Align(
+          alignment: alignment,
+          child: Ink(
+            decoration: ShapeDecoration(
+              color: Theme.of(context).primaryColor.withOpacity(0.8),
+              shape: CircleBorder()
+            ),
+            child: SizedBox(
+              height: 36,
+              width: 36,
+              child: IconButton(
+                icon: Icon(icon, size: 24),
+                onPressed: onTap,
+                padding: EdgeInsets.all(0)
+              )
             )
           )
-        )
+        ),
       );
+
+  DateTime? _lastMoveTime;
 
   KeyEventResult _onPressed(BuildContext context, LogicalKeyboardKey? key) {
     if (!_moving) {
@@ -574,31 +700,37 @@ class _AppCardState extends State<AppCard> with TickerProviderStateMixin {
     }
 
     if (_moving) {
+      if (AppCardKeys.isArrowKey(key)) {
+        final now = DateTime.now();
+        if (_lastMoveTime != null && now.difference(_lastMoveTime!) < const Duration(milliseconds: 50)) {
+          return KeyEventResult.handled;
+        }
+        _lastMoveTime = now;
+      }
 
       WidgetsBinding.instance.addPostFrameCallback((_) => Scrollable.ensureVisible(context,
           alignment: 0.1, duration: const Duration(milliseconds: 100), curve: Curves.easeInOut));
       if (key == LogicalKeyboardKey.arrowLeft) {
-
         widget.onMove(AxisDirection.left);
       } else if (key == LogicalKeyboardKey.arrowUp) {
-
         widget.onMove(AxisDirection.up);
       } else if (key == LogicalKeyboardKey.arrowRight) {
-
         widget.onMove(AxisDirection.right);
       } else if (key == LogicalKeyboardKey.arrowDown) {
-
         widget.onMove(AxisDirection.down);
-      } else if (_validationKeys.contains(key) || key == LogicalKeyboardKey.escape) {
-
+      } else if (AppCardKeys.validationKeys.contains(key)) {
         setState(() => _moving = false);
         widget.onMoveEnd();
+      } else if (AppCardKeys.cancelKeys.contains(key)) {
+        setState(() => _moving = false);
+        widget.onMoveCancel?.call();
+        context.read<LauncherState>().suppressBackNavigation();
       } else {
         return KeyEventResult.ignored;
       }
 
       return KeyEventResult.handled;
-    } else if (_validationKeys.contains(key)) {
+    } else if (key == null || AppCardKeys.validationKeys.contains(key)) {
       if (!_clicked) {
         setState(() => _clicked = true);
         Future.delayed(const Duration(milliseconds: 150), () {
@@ -621,7 +753,7 @@ class _AppCardState extends State<AppCard> with TickerProviderStateMixin {
   }
 
   KeyEventResult _onLongPress(BuildContext context, LogicalKeyboardKey? key) {
-    if (!_moving && (key == null || longPressableKeys.contains(key))) {
+    if (!_moving && (key == null || AppCardKeys.longPressableKeys.contains(key))) {
       _showPanel(context);
       return KeyEventResult.handled;
     }

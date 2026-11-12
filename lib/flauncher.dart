@@ -28,6 +28,9 @@ import 'package:flauncher/widgets/launcher_alternative_view.dart';
 import 'package:flauncher/widgets/focus_aware_app_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flauncher/widgets/continue_watching_row.dart';
+import 'package:flauncher/providers/watch_next_service.dart';
+import 'package:flauncher/providers/settings_service.dart';
 import 'package:flauncher/l10n/app_localizations.dart';
 
 import 'models/category.dart';
@@ -74,7 +77,33 @@ class _FLauncherState extends State<FLauncher> {
                 child: Consumer<AppsService>(
                   builder: (context, appsService, _) {
                     if (appsService.initialized) {
-                      return SingleChildScrollView(child: _sections(appsService.launcherSections));
+                      return Selector<WatchNextService, bool>(
+                        selector: (_, watchNext) => watchNext.programs.isNotEmpty,
+                        builder: (context, hasContinuingPrograms, _) =>
+                            Selector<SettingsService, ({bool show, int order})>(
+                              selector: (_, settings) => (
+                                show: settings.showContinueWatching,
+                                order: settings.continueWatchingOrder,
+                              ),
+                              builder: (context, cwSettings, _) =>
+                                  SingleChildScrollView(
+                                    physics: const ClampingScrollPhysics(),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        _sections(
+                                            appsService.launcherSections,
+                                            continueWatchingActive:
+                                                cwSettings.show &&
+                                                hasContinuingPrograms,
+                                            continueWatchingOrder:
+                                                cwSettings.order),
+                                      ],
+                                    ),
+                                  ),
+                            ),
+                    );
                     }
                     else {
                       return _emptyState(context);
@@ -89,15 +118,29 @@ class _FLauncherState extends State<FLauncher> {
     ),
   );
 
-  Widget _sections(List<LauncherSection> sections) {
+  Widget _sections(
+    List<LauncherSection> sections, {
+    bool continueWatchingActive = false,
+    int continueWatchingOrder = 0,
+  }) {
     List<Widget> children = [];
     bool firstCategoryFound = false;
+    bool cwInserted = false;
 
+    int sectionIdx = 0;
     for (var section in sections) {
+      if (continueWatchingActive && !cwInserted && sectionIdx == continueWatchingOrder) {
+        final bool isFirstSection = !firstCategoryFound;
+        children.add(ContinueWatchingRow(isFirstSection: isFirstSection));
+        cwInserted = true;
+        firstCategoryFound = true;
+      }
+
       final Key sectionKey = Key(section.id.toString());
 
       if (section is LauncherSpacer) {
         children.add(SizedBox(key: sectionKey, height: section.height.toDouble()));
+        sectionIdx++;
         continue;
       }
 
@@ -116,7 +159,7 @@ class _FLauncherState extends State<FLauncher> {
               applications: category.applications,
               isFirstSection: isFirstSection
           );
-          break; // Added break
+          break;
         case CategoryType.grid:
           categoryWidget = AppsGrid(
               key: sectionKey,
@@ -124,22 +167,31 @@ class _FLauncherState extends State<FLauncher> {
               applications: category.applications,
               isFirstSection: isFirstSection
           );
-          break; // Added break
+          break;
       }
 
       children.add(Padding(
           padding: const EdgeInsets.symmetric(vertical: 8),
           child: categoryWidget
       ));
+      sectionIdx++;
+    }
+
+    if (continueWatchingActive && !cwInserted) {
+      final bool isFirstSection = !firstCategoryFound;
+      children.add(ContinueWatchingRow(isFirstSection: isFirstSection));
+      cwInserted = true;
+      firstCategoryFound = true;
     }
 
     return Column(children: children);
   }
 
   Widget _wallpaper(BuildContext context, WallpaperService wallpaperService) {
+    Widget background;
     if (wallpaperService.wallpaper != null) {
       final physicalSize = MediaQuery.sizeOf(context);
-      return Image(
+      background = Image(
         image: wallpaperService.wallpaper!,
         key: Key("background_${wallpaperService.version}"),
         fit: BoxFit.cover,
@@ -148,8 +200,28 @@ class _FLauncherState extends State<FLauncher> {
       );
     }
     else {
-      return Container(key: const Key("background"), decoration: BoxDecoration(gradient: wallpaperService.gradient.gradient));
+      background = Container(key: const Key("background"), decoration: BoxDecoration(gradient: wallpaperService.gradient.gradient));
     }
+
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        background,
+        DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Colors.black.withOpacity(0.35),
+                Colors.black.withOpacity(0.15),
+                Colors.black.withOpacity(0.45),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   Widget _emptyState(BuildContext context) {

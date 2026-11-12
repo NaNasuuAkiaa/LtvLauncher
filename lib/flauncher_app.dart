@@ -20,7 +20,6 @@ import 'package:flauncher/actions.dart';
 import 'package:flauncher/providers/apps_service.dart';
 import 'package:flauncher/providers/settings_service.dart';
 import 'package:flauncher/providers/launcher_state.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -36,19 +35,6 @@ class FLauncherApp extends StatelessWidget
     BackIntent()
   ]);
 
-  static const MaterialColor _swatch = MaterialColor(0xFF011526, <int, Color>{
-    50: Color(0xFF36A0FA),
-    100: Color(0xFF067BDE),
-    200: Color(0xFF045CA7),
-    300: Color(0xFF033662),
-    400: Color(0xFF022544),
-    500: Color(0xFF011526),
-    600: Color(0xFF000508),
-    700: Color(0xFF000000),
-    800: Color(0xFF000000),
-    900: Color(0xFF000000),
-  });
-
   const FLauncherApp();
 
   @override
@@ -57,11 +43,14 @@ class FLauncherApp extends StatelessWidget
     LauncherState launcherState = context.read<LauncherState>();
     launcherState.refresh(appsService);
 
-    return Selector<SettingsService, Color>(
-      selector: (_, settings) => settings.accentColor,
-      builder: (context, accentColor, _) {
+    return Selector<SettingsService, (Color, Locale?)>(
+      selector: (_, settings) => (settings.accentColor, settings.appLocale),
+      builder: (context, tuple, _) {
+        final accentColor = tuple.$1;
+        final appLocale = tuple.$2;
 
         return MaterialApp(
+      locale: appLocale,
       scrollBehavior: const MaterialScrollBehavior().copyWith(
         overscroll: false,
       ),
@@ -69,7 +58,11 @@ class FLauncherApp extends StatelessWidget
         ...WidgetsApp.defaultShortcuts,
         const SingleActivator(LogicalKeyboardKey.escape): _backIntents,
         const SingleActivator(LogicalKeyboardKey.gameButtonB): _backIntents,
-        const SingleActivator(LogicalKeyboardKey.select): const ActivateIntent()
+        const SingleActivator(LogicalKeyboardKey.select): const ActivateIntent(),
+        const SingleActivator(LogicalKeyboardKey.enter): const ActivateIntent(),
+        const SingleActivator(LogicalKeyboardKey.numpadEnter): const ActivateIntent(),
+        const SingleActivator(LogicalKeyboardKey.gameButtonA): const ActivateIntent(),
+        const SingleActivator(LogicalKeyboardKey.gameButtonSelect): const ActivateIntent(),
       },
       actions: {
         ...WidgetsApp.defaultActions,
@@ -82,6 +75,7 @@ class FLauncherApp extends StatelessWidget
         GlobalWidgetsLocalizations.delegate
       ],
       supportedLocales: AppLocalizations.supportedLocales,
+      localeListResolutionCallback: resolveAppLocale,
       title: 'FLauncher',
         theme: ThemeData(
           useMaterial3: true,
@@ -92,22 +86,25 @@ class FLauncherApp extends StatelessWidget
             brightness: Brightness.dark,
             primary: accentColor,
             secondary: accentColor,
-            surface: const Color(0xFF1E1E1E),
-            background: const Color(0xFF121212),
+            surface: const Color(0xFF0F0F0F),
           ),
-          cardColor: const Color(0xFF1E1E1E), // Dark surface color
-          canvasColor: const Color(0xFF121212), // Dark background
-          dialogBackgroundColor: const Color(0xFF1E1E1E),
-          scaffoldBackgroundColor: const Color(0xFF121212), // Dark background
+          cardColor: const Color(0xFF0F0F0F), // Dark surface color
+          canvasColor: const Color(0xFF0A0A0A), // Dark background
+          dialogBackgroundColor: const Color(0xFF0F0F0F),
+          scaffoldBackgroundColor: const Color(0xFF0A0A0A), // Dark background
+          splashFactory: NoSplash.splashFactory,
+          highlightColor: Colors.transparent,
+          splashColor: Colors.transparent,
           textButtonTheme: TextButtonThemeData(
               style: TextButton.styleFrom(
                 foregroundColor: Colors.white, // Revert to white for settings list
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                splashFactory: NoSplash.splashFactory,
               )
           ),
           dialogTheme: DialogTheme(
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            backgroundColor: const Color(0xFF1E1E1E),
+            backgroundColor: const Color(0xFF0F0F0F),
             titleTextStyle: Typography.material2018().white.titleLarge,
             contentTextStyle: Typography.material2018().white.bodyMedium,
           ),
@@ -135,12 +132,12 @@ class FLauncherApp extends StatelessWidget
             fillColor: accentColor.withOpacity(0.1),
           ),
           switchTheme: SwitchThemeData(
-            thumbColor: MaterialStateProperty.resolveWith((states) {
-              if (states.contains(MaterialState.selected)) return accentColor;
+            thumbColor: WidgetStateProperty.resolveWith((states) {
+              if (states.contains(WidgetState.selected)) return accentColor;
               return null;
             }),
-            trackColor: MaterialStateProperty.resolveWith((states) {
-              if (states.contains(MaterialState.selected)) return accentColor.withOpacity(0.5);
+            trackColor: WidgetStateProperty.resolveWith((states) {
+              if (states.contains(WidgetState.selected)) return accentColor.withOpacity(0.5);
               return null;
             }),
           ),
@@ -149,7 +146,8 @@ class FLauncherApp extends StatelessWidget
         builder: (context) => PopScope(
           canPop: false,
           child: FLauncher(),
-          onPopInvoked: (didPop) {
+          onPopInvokedWithResult: (didPop, result) {
+            if (didPop) return;
             LauncherState launcherState = context.read<LauncherState>();
             launcherState.handleBackNavigation(context);
           }
@@ -159,3 +157,18 @@ class FLauncherApp extends StatelessWidget
     });
   }
 }
+
+Locale resolveAppLocale(List<Locale>? preferredLocales, Iterable<Locale> supportedLocales) {
+  if (preferredLocales != null) {
+    for (final locale in preferredLocales) {
+      final code = locale.languageCode == 'iw' ? 'he' : locale.languageCode;
+      for (final supported in supportedLocales) {
+        if (supported.languageCode == code) {
+          return supported;
+        }
+      }
+    }
+  }
+  return const Locale('en');
+}
+

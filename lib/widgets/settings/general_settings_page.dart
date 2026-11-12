@@ -17,15 +17,13 @@
  */
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flauncher/l10n/app_localizations.dart';
 import 'focusable_settings_tile.dart';
-import 'brightness_settings_page.dart';
 import 'date_time_format_page.dart';
 import 'back_button_action_page.dart';
 import 'data_usage_period_page.dart';
-import 'screensaver_clock_style_page.dart';
-
+import 'backup_restore_page.dart';
+import 'app_language_page.dart';
 
 class GeneralSettingsPage extends StatelessWidget {
   static const String routeName = "general_settings_panel";
@@ -38,7 +36,7 @@ class GeneralSettingsPage extends StatelessWidget {
 
     return Column(
       children: [
-        Text('System', style: Theme.of(context).textTheme.titleLarge),
+        Text(localizations.system, style: Theme.of(context).textTheme.titleLarge),
         const Divider(),
         Expanded(
           child: SingleChildScrollView(
@@ -46,19 +44,9 @@ class GeneralSettingsPage extends StatelessWidget {
               children: [
                 FocusableSettingsTile(
                   autofocus: true,
-                  leading: const Icon(Icons.brightness_6),
-                  title: Text('Brightness Scheduler', style: Theme.of(context).textTheme.bodyMedium),
-                  onPressed: () => Navigator.of(context).pushNamed(BrightnessSettingsPage.routeName),
-                ),
-                FocusableSettingsTile(
-                  leading: const Icon(Icons.screenshot_monitor),
-                  title: Text('Screensaver Settings', style: Theme.of(context).textTheme.bodyMedium),
-                  onPressed: () => _openScreensaverSettings(),
-                ),
-                FocusableSettingsTile(
-                  leading: const Icon(Icons.watch_later_outlined),
-                  title: Text('Screensaver Clock Style', style: Theme.of(context).textTheme.bodyMedium),
-                  onPressed: () => Navigator.of(context).pushNamed(ScreensaverClockStylePage.routeName),
+                  leading: const Icon(Icons.language),
+                  title: Text(localizations.appLanguage, style: Theme.of(context).textTheme.bodyMedium),
+                  onPressed: () => Navigator.of(context).pushNamed(AppLanguagePage.routeName),
                 ),
                 FocusableSettingsTile(
                   leading: const Icon(Icons.date_range),
@@ -72,20 +60,19 @@ class GeneralSettingsPage extends StatelessWidget {
                 ),
                 FocusableSettingsTile(
                   leading: const Icon(Icons.data_usage),
-                  title: Text('Data Usage Period', style: Theme.of(context).textTheme.bodyMedium),
+                  title: Text(localizations.dataUsagePeriod, style: Theme.of(context).textTheme.bodyMedium),
                   onPressed: () => Navigator.of(context).pushNamed(DataUsagePeriodPage.routeName),
                 ),
-
+                FocusableSettingsTile(
+                  leading: const Icon(Icons.settings_backup_restore),
+                  title: Text(localizations.backupAndRestore, style: Theme.of(context).textTheme.bodyMedium),
+                  onPressed: () => Navigator.of(context).pushNamed(BackupRestorePage.routeName),
+                ),
               ],
             ),
           ),
         ),
       ],
     );
-  }
-
-  Future<void> _openScreensaverSettings() async {
-    const platform = MethodChannel('me.efesser.flauncher/method');
-    platform.invokeMethod('openScreensaverSettings');
   }
 }

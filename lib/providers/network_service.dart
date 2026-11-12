@@ -57,7 +57,7 @@ enum CellularNetworkType
   Nr,       // 20
 }
 
-class NetworkService extends ChangeNotifier
+class NetworkService extends ChangeNotifier with WidgetsBindingObserver
 {
   final FLauncherChannel  _channel;
 
@@ -67,7 +67,10 @@ class NetworkService extends ChangeNotifier
   int                 _wirelessNetworkSignalLevel;
   int                 _dailyDataUsage; // In bytes
   bool                _hasUsageStatsPermission;
+  bool                _vpnActive;
   Timer?              _usageTimer;
+  int                 _callCount = 0;
+  int                 _usageCallCount = 0;
 
 
   NetworkService(this._channel) :
@@ -76,7 +79,8 @@ class NetworkService extends ChangeNotifier
         _networkType = NetworkType.Unknown,
         _wirelessNetworkSignalLevel = 0,
         _dailyDataUsage = 0,
-        _hasUsageStatsPermission = false
+        _hasUsageStatsPermission = false,
+        _vpnActive = false
   {
     _channel.addNetworkChangedListener(_onNetworkChanged);
 
@@ -92,46 +96,56 @@ class NetworkService extends ChangeNotifier
         });
 
     _checkPermissionAndStartPolling();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      refreshPermissionAndUsage();
+    }
   }
 
   void _checkPermissionAndStartPolling() async {
-    _hasUsageStatsPermission = await _channel.checkUsageStatsPermission();
+    final localCallCount = ++_callCount;
+    final bool allowed = await _channel.checkUsageStatsPermission();
+    if (localCallCount != _callCount) return;
+
+    _hasUsageStatsPermission = allowed;
     if (_hasUsageStatsPermission) {
       _fetchUsage();
-      _usageTimer = Timer.periodic(const Duration(minutes: 5), (_) => _fetchUsage());
+      if (_usageTimer == null || !_usageTimer!.isActive) {
+        _usageTimer = Timer.periodic(const Duration(minutes: 5), (_) => _fetchUsage());
+      }
+    } else {
+      _usageTimer?.cancel();
+      _usageTimer = null;
     }
     notifyListeners();
   }
 
   Future<void> requestPermission() async {
     await _channel.requestUsageStatsPermission();
-    // Wait a bit for user to return, or just rely on Lifecycle, but here we can't easily hook into lifecycle.
-    // We can assume if they clicked it, they might come back.
-    // Ideally we recheck when app resumes. For now let's just recheck after a delay or expose a method to recheck.
   }
 
   // Call this when app resumes
   Future<void> refreshPermissionAndUsage() async {
-    _hasUsageStatsPermission = await _channel.checkUsageStatsPermission();
-    if (_hasUsageStatsPermission) {
-      _fetchUsage();
-      if (_usageTimer == null || !_usageTimer!.isActive) {
-         _usageTimer = Timer.periodic(const Duration(minutes: 5), (_) => _fetchUsage());
-      }
-    } else {
-      _usageTimer?.cancel();
-    }
-    notifyListeners();
+    _checkPermissionAndStartPolling();
   }
 
   Future<void> openWifiSettings() async {
     await _channel.openWifiSettings();
   }
 
+  Future<void> openVpnSettings() async {
+    await _channel.openVpnSettings();
+  }
+
   Future<void> _fetchUsage() async {
-     // This will be called with the current period from the widget
-     // For now, default to daily
+     final localCallCount = ++_usageCallCount;
      int usage = await _channel.getDailyDataUsage();
+     if (localCallCount != _usageCallCount) return;
+
      if (usage != -1) {
        _dailyDataUsage = usage;
        notifyListeners();
@@ -153,6 +167,7 @@ class NetworkService extends ChangeNotifier
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _usageTimer?.cancel();
     super.dispose();
   }
@@ -163,9 +178,12 @@ class NetworkService extends ChangeNotifier
   int                   get   wirelessNetworkSignalLevel    => _wirelessNetworkSignalLevel;
   int                 get   dailyDataUsage                => _dailyDataUsage;
   bool                get   hasUsageStatsPermission       => _hasUsageStatsPermission;
+  bool                get   vpnActive                     => _vpnActive;
 
-  CellularNetworkType _getCellularNetworkType(int index)
-  {
+  CellularNetworkType _getCellularNetworkType(int index) {
+    if (index < 0 || index >= CellularNetworkType.values.length) {
+      return CellularNetworkType.Unknown;
+    }
     CellularNetworkType type = CellularNetworkType.values[index];
     if (type == CellularNetworkType.Unused_1 || type == CellularNetworkType.Unused_2) {
       type = CellularNetworkType.Unknown;
@@ -174,25 +192,28 @@ class NetworkService extends ChangeNotifier
     return type;
   }
 
-  void _getNetworkInformation(Map<String, dynamic> map)
-  {
+  void _getNetworkInformation(Map<String, dynamic> map) {
     log("NetworkService: _getNetworkInformation: $map");
     try {
-      int networkTypeInt = map["networkType"] as int;
-      _hasInternetAccess = map["internetAccess"] as bool;
-      _networkType = NetworkType.values[networkTypeInt];
+      int networkTypeInt = (map["networkType"] as num?)?.toInt() ?? 0;
+      _hasInternetAccess = map["internetAccess"] as bool? ?? false;
+      if (networkTypeInt >= 0 && networkTypeInt < NetworkType.values.length) {
+        _networkType = NetworkType.values[networkTypeInt];
+      } else {
+        _networkType = NetworkType.Unknown;
+      }
+      _vpnActive = map["vpnActive"] as bool? ?? false;
 
       if (_networkType == NetworkType.Cellular || _networkType == NetworkType.Wifi) {
-        _wirelessNetworkSignalLevel = map["wirelessSignalLevel"] as int;
+        _wirelessNetworkSignalLevel = (map["wirelessSignalLevel"] as num?)?.toInt() ?? 0;
       }
-      log("NetworkService: parsed type $_networkType, signal $_wirelessNetworkSignalLevel");
+      log("NetworkService: parsed type $_networkType, signal $_wirelessNetworkSignalLevel, vpn $_vpnActive");
     } catch (e) {
       log("NetworkService error parsing: $e");
     }
   }
 
-  void _onNetworkChanged(Map<String, dynamic> event)
-  {
+  void _onNetworkChanged(Map<String, dynamic> event) {
     switch (event["name"]) {
       case "NETWORK_AVAILABLE":
         Map<dynamic, dynamic> map = event["arguments"];
@@ -201,13 +222,17 @@ class NetworkService extends ChangeNotifier
       case "NETWORK_UNAVAILABLE":
         _hasInternetAccess = false;
         _networkType = NetworkType.Unknown;
+        _vpnActive = false;
         break;
       case "CAPABILITIES_CHANGED":
         Map<dynamic, dynamic> map = event["arguments"];
         _getNetworkInformation(map.cast<String, dynamic>());
         break;
       case "CELLULAR_STATE_CHANGED":
-        _cellularNetworkType = _getCellularNetworkType(event["arguments"]);
+        final int? typeIndex = (event["arguments"] as num?)?.toInt();
+        if (typeIndex != null) {
+          _cellularNetworkType = _getCellularNetworkType(typeIndex);
+        }
         notifyListeners();
         break;
     }

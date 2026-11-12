@@ -16,7 +16,6 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import 'dart:typed_data';
 
 import 'package:flauncher/providers/apps_service.dart';
 
@@ -174,6 +173,11 @@ class _ApplicationsPanelPageState extends State<ApplicationsPanelPage> {
   Widget navButton(bool selected, bool focused, int index, String title, IconData icon) {
     // ... (same)
     return InkWell(
+      canRequestFocus: false,
+      focusColor: Colors.transparent,
+      hoverColor: Colors.transparent,
+      splashColor: Colors.transparent,
+      highlightColor: Colors.transparent,
       onTap: () {
         _selectTab(index, title);
       },
@@ -261,6 +265,7 @@ class _TVTab extends StatelessWidget {
                 .asMap()
                 .entries
                 .map((entry) => EnsureVisible(
+                      key: ValueKey(entry.value.packageName),
                       alignment: 0.5,
                       child: _AppListItem(entry.value, autofocus: entry.key == 0, isFirst: entry.key == 0),
                     ))
@@ -283,6 +288,7 @@ class _SideloadedTab extends StatelessWidget {
                 .asMap()
                 .entries
                 .map((entry) => EnsureVisible(
+                      key: ValueKey(entry.value.packageName),
                       alignment: 0.5,
                       child: _AppListItem(entry.value, autofocus: entry.key == 0, isFirst: entry.key == 0),
                     ))
@@ -311,6 +317,7 @@ class _FavoritesTab extends StatelessWidget {
                 .asMap()
                 .entries
                 .map((entry) => EnsureVisible(
+                      key: ValueKey(entry.value.packageName),
                       alignment: 0.5,
                       child: _AppListItem(entry.value, autofocus: entry.key == 0, isFirst: entry.key == 0),
                     ))
@@ -333,6 +340,7 @@ class _HiddenTab extends StatelessWidget {
                 .asMap()
                 .entries
                 .map((entry) => EnsureVisible(
+                      key: ValueKey(entry.value.packageName),
                       alignment: 0.5,
                       child: _AppListItem(entry.value, autofocus: entry.key == 0, isFirst: entry.key == 0),
                     ))
@@ -424,6 +432,14 @@ class _AppListItemState extends State<_AppListItem>
   }
 
   @override
+  void didUpdateWidget(covariant _AppListItem oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.application.packageName != widget.application.packageName) {
+      _iconLoadFuture = _loadAppIcon(Provider.of<AppsService>(context, listen: false));
+    }
+  }
+
+  @override
   void dispose() {
     _focusNode.dispose();
     super.dispose();
@@ -460,70 +476,65 @@ class _AppListItemState extends State<_AppListItem>
             builder: (context) {
               final focused = Focus.of(context).hasFocus;
               final primaryColor = Theme.of(context).colorScheme.primary;
-              return AnimatedContainer(
-                duration: const Duration(milliseconds: 50),
+              return Container(
                 decoration: BoxDecoration(
-                  color: focused ? Colors.white.withOpacity(0.05) : Colors.white.withOpacity(0.05), // Keep background consistent or same logic
+                  color: Colors.white.withOpacity(0.05),
                   borderRadius: BorderRadius.circular(12),
                   border: focused
                       ? Border.all(color: primaryColor, width: 2)
                       : Border.all(color: Colors.transparent, width: 2),
-                  boxShadow: focused
-                      ? const [BoxShadow(color: Colors.black54, blurRadius: 8, spreadRadius: 1)]
-                      : null,
                 ),
-                child: Material( // Needed for InkWell to show ripple on top of container color if needed, or inside.
+                child: Material(
                   color: Colors.transparent,
                   child: InkWell(
+                    canRequestFocus: false,
+                    focusColor: Colors.transparent,
+                    hoverColor: Colors.transparent,
+                    splashColor: Colors.transparent,
+                    highlightColor: Colors.transparent,
                     borderRadius: BorderRadius.circular(12),
-                  onTap: _openAppDetails,
-                  child: FutureBuilder(
-                    future: _iconLoadFuture,
-                    builder: (context, snapshot) {
-                      Widget appIcon;
-                      
-                      if (snapshot.hasData) {
-                        appIcon = Image(image: snapshot.data!, height: 40);
-                      }
-                      else if (snapshot.hasError) {
-                        appIcon = const Icon(Icons.warning);
-                      }
-                      else {
-                        appIcon = const SizedBox(
-                          height: 40,
-                          width: 40,
-                          child: Padding(
-                            padding: EdgeInsets.all(8),
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        );
-                      }
+                    onTap: _openAppDetails,
+                    child: FutureBuilder<ImageProvider>(
+                      future: _iconLoadFuture,
+                      builder: (context, snapshot) {
+                        Widget appIcon;
+                        if (snapshot.hasData) {
+                          appIcon = Image(image: snapshot.data!, height: 40);
+                        } else if (snapshot.hasError) {
+                          appIcon = const Icon(Icons.warning, size: 36);
+                        } else {
+                          appIcon = const Icon(Icons.android, size: 36, color: Colors.white24);
+                        }
 
-                      return ListTile(
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                        title: Text(
-                          widget.application.name,
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: Colors.white,
-                              fontWeight: focused ? FontWeight.bold : FontWeight.normal
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        leading: appIcon,
-                        trailing: Icon(
-                          Icons.chevron_right, 
-                          size: 20, 
-                          color: focused ? primaryColor : Colors.white30
-                        ),
-                      );
-                    },
+                        return _buildTile(context, appIcon, focused, primaryColor);
+                      },
+                    ),
                   ),
-                )
-              ));
-            }
+                ),
+              );
+            },
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildTile(BuildContext context, Widget appIcon, bool focused, Color primaryColor) {
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      title: Text(
+        widget.application.name,
+        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: Colors.white,
+            fontWeight: focused ? FontWeight.bold : FontWeight.normal),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+      leading: appIcon,
+      trailing: Icon(
+        Icons.chevron_right,
+        size: 20,
+        color: focused ? primaryColor : Colors.white30,
       ),
     );
   }

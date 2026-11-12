@@ -17,9 +17,13 @@
  */
 
 import 'package:flauncher/providers/apps_service.dart';
+import 'package:flauncher/widgets/settings/accessibility_page.dart';
 import 'package:flauncher/widgets/settings/applications_panel_page.dart';
+import 'package:flauncher/widgets/settings/donate_dialog.dart';
 import 'package:flauncher/widgets/settings/flauncher_about_dialog.dart';
 import 'package:flauncher/widgets/settings/interface_settings_page.dart';
+import 'package:flauncher/widgets/settings/display_settings_page.dart';
+import 'package:flauncher/widgets/settings/notifications_settings_page.dart';
 import 'package:flauncher/widgets/settings/general_settings_page.dart';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -30,6 +34,8 @@ import 'focusable_settings_tile.dart';
 
 class SettingsPanelPage extends StatelessWidget {
   static const String routeName = "settings_panel";
+
+  const SettingsPanelPage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -51,13 +57,36 @@ class SettingsPanelPage extends StatelessWidget {
                 ),
                 FocusableSettingsTile(
                   leading: const Icon(Icons.auto_awesome_mosaic_outlined),
-                  title: Text('Interface', style: Theme.of(context).textTheme.bodyMedium),
+                  title: Text(localizations.interface, style: Theme.of(context).textTheme.bodyMedium),
                   onPressed: () => Navigator.of(context).pushNamed(InterfaceSettingsPage.routeName),
                 ),
                 FocusableSettingsTile(
+                  leading: const Icon(Icons.tv),
+                  title: Text(localizations.displayAndScreensaver, style: Theme.of(context).textTheme.bodyMedium),
+                  onPressed: () => Navigator.of(context).pushNamed(DisplaySettingsPage.routeName),
+                ),
+                FocusableSettingsTile(
+                  leading: const Icon(Icons.notifications_active_outlined),
+                  title: Text(localizations.notifications, style: Theme.of(context).textTheme.bodyMedium),
+                  onPressed: () => Navigator.of(context).pushNamed(NotificationsSettingsPage.routeName),
+                ),
+                FocusableSettingsTile(
                   leading: const Icon(Icons.settings_suggest_outlined),
-                  title: Text('System', style: Theme.of(context).textTheme.bodyMedium),
+                  title: Text(localizations.system, style: Theme.of(context).textTheme.bodyMedium),
                   onPressed: () => Navigator.of(context).pushNamed(GeneralSettingsPage.routeName),
+                ),
+                FocusableSettingsTile(
+                  leading: const Icon(Icons.accessibility_new),
+                  title: Text(localizations.accessibility, style: Theme.of(context).textTheme.bodyMedium),
+                  onPressed: () => Navigator.of(context).pushNamed(AccessibilityPage.routeName),
+                ),
+                FocusableSettingsTile(
+                  leading: const Icon(Icons.favorite_rounded),
+                  title: Text("Support & Donate", style: Theme.of(context).textTheme.bodyMedium),
+                  onPressed: () => showDialog(
+                    context: context,
+                    builder: (_) => const DonateDialog(),
+                  ),
                 ),
                 const Divider(),
                 FocusableSettingsTile(
@@ -75,14 +104,14 @@ class SettingsPanelPage extends StatelessWidget {
                       builder: (context, snapshot) => snapshot.connectionState == ConnectionState.done && snapshot.hasData
                           ? LTvLauncherAboutDialog(packageInfo: snapshot.data!)
                           : Container(),
-                    )
-                  )
-                )
-              ]
-            )
-          )
-        )
-      ]
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

@@ -30,6 +30,7 @@ const _gradientUuidKey = "gradient_uuid";
 const _backButtonActionKey = "back_button_action";
 const _dateFormatKey = "date_format";
 const _showCategoryTitlesKey = "show_category_titles";
+const _showCategoryAppCountKey = "show_category_app_count";
 const _showAppNamesBelowIconsKey = "show_app_names_below_icons";
 const _themesKey = "app_banner_shape";
 const _hideHighlightOutlineOnHomescreenKey = "hide_highlight_outline_on_homescreen";
@@ -42,7 +43,30 @@ const _showDataWidgetInStatusBarKey = "show_wifi_widget_in_status_bar";
 const String _showNetworkIndicatorInStatusBarKey = "show_network_indicator_in_status_bar";
 const String _accentColorKey = "accent_color";
 const String _screensaverClockStyleKey = "screensaver_clock_style";
+const String _screensaverAnimationStyleKey = "screensaver_animation_style";
 const String _timeBasedWallpaperEnabledKey = "time_based_wallpaper_enabled";
+const String _showInputsWidgetInStatusBarKey = "show_inputs_widget_in_status_bar";
+const String _showContinueWatchingKey = "show_continue_watching";
+const String _continueWatchingCardSizeKey = "continue_watching_card_size";
+const String _continueWatchingMaxItemsKey = "continue_watching_max_items";
+const String _continueWatchingShowProgressKey = "continue_watching_show_progress";
+const String _continueWatchingShowPercentageKey = "continue_watching_show_percentage";
+const String _continueWatchingShowDescriptionKey = "continue_watching_show_description";
+const String _continueWatchingOrderKey = "continue_watching_order";
+const String _continueWatchingHideThresholdKey = "continue_watching_hide_threshold";
+const String _hiddenWatchNextProgramIdsKey = "hidden_watch_next_program_ids";
+const String _hiddenWatchNextPackagesKey = "hidden_watch_next_packages";
+const String _startOnBootKey = "start_on_boot";
+const String _showNotificationsWidgetInStatusBarKey = "show_notifications_widget_in_status_bar";
+const String _autoHideNotificationsWidgetKey = "auto_hide_notifications_widget";
+const String _appLanguageKey = "app_language";
+const String _showWeatherInStatusBarKey = "show_weather_in_status_bar";
+const String _showWeatherWarningsKey = "show_weather_warnings";
+const String _temperatureUnitKey = "temperature_unit";
+const String _autoAddNewAppsKey = "auto_add_new_apps";
+
+const String TEMPERATURE_UNIT_CELSIUS = "celsius";
+const String TEMPERATURE_UNIT_FAHRENHEIT = "fahrenheit";
 
 // WiFi usage period options
 const String DATA_USAGE_DAILY = "daily";
@@ -66,6 +90,11 @@ const String ACCENT_COLOR_AMBER = "FFAB00";
 const String ACCENT_COLOR_ROSE = "FF4081";
 const String ACCENT_COLOR_ICE_BLUE = "80D8FF";
 
+// Screensaver animation options
+const String SCREENSAVER_ANIMATION_BOUNCE = "bounce";
+const String SCREENSAVER_ANIMATION_FADE = "fade";
+const String SCREENSAVER_ANIMATION_SCATTER = "scatter";
+
 class SettingsService extends ChangeNotifier {
   static final defaultDateFormat = "EEEE d";
   static final defaultTimeFormat = "H:mm";
@@ -75,6 +104,7 @@ class SettingsService extends ChangeNotifier {
   late bool _appKeyClickEnabled;
   late bool _autoHideAppBarEnabled;
   late bool _showCategoryTitles;
+  late bool _showCategoryAppCount;
   late bool _showAppNamesBelowIcons;
   late String _themes;
   late bool _hideHighlightOutlineOnHomescreen;
@@ -90,8 +120,29 @@ class SettingsService extends ChangeNotifier {
   late bool _showNetworkIndicatorInStatusBar;
   late String _accentColorHex;
   late String _screensaverClockStyle;
+  late String _screensaverAnimationStyle;
   late bool _timeBasedWallpaperEnabled;
+  late bool _showInputsWidgetInStatusBar;
+  late bool _showContinueWatching;
+  late String _continueWatchingCardSize;
+  late int _continueWatchingMaxItems;
+  late bool _continueWatchingShowProgress;
+  late bool _continueWatchingShowPercentage;
+  late bool _continueWatchingShowDescription;
+  late int _continueWatchingOrder;
+  late int _continueWatchingHideThreshold;
+  late List<String> _hiddenWatchNextProgramIds;
+  late List<String> _hiddenWatchNextPackages;
+  late bool _startOnBoot;
+  late bool _showNotificationsWidgetInStatusBar;
+  late bool _autoHideNotificationsWidget;
+  late String _appLanguage;
+  late bool _showWeatherInStatusBar;
+  late bool _showWeatherWarnings;
+  late String _temperatureUnit;
+  late bool _autoAddNewApps;
 
+  bool get autoAddNewApps => _autoAddNewApps;
   bool get appHighlightAnimationEnabled => _appHighlightAnimationEnabled;
 
   bool get appKeyClickEnabled => _appKeyClickEnabled;
@@ -99,6 +150,8 @@ class SettingsService extends ChangeNotifier {
   bool get autoHideAppBarEnabled => _autoHideAppBarEnabled;
 
   bool get showCategoryTitles => _showCategoryTitles;
+
+  bool get showCategoryAppCount => _showCategoryAppCount;
 
   bool get showAppNamesBelowIcons => _showAppNamesBelowIcons;
 
@@ -126,20 +179,56 @@ class SettingsService extends ChangeNotifier {
 
   bool get showNetworkIndicatorInStatusBar => _showNetworkIndicatorInStatusBar;
 
+  bool get showInputsWidgetInStatusBar => _showInputsWidgetInStatusBar;
+  bool get showContinueWatching => _showContinueWatching;
+  String get continueWatchingCardSize => _continueWatchingCardSize;
+  int get continueWatchingMaxItems => _continueWatchingMaxItems;
+  bool get continueWatchingShowProgress => _continueWatchingShowProgress;
+  bool get continueWatchingShowPercentage => _continueWatchingShowPercentage;
+  bool get continueWatchingShowDescription => _continueWatchingShowDescription;
+  int get continueWatchingOrder => _continueWatchingOrder;
+  int get continueWatchingHideThreshold => _continueWatchingHideThreshold;
+  List<String> get hiddenWatchNextProgramIds => List.unmodifiable(_hiddenWatchNextProgramIds);
+  List<String> get hiddenWatchNextPackages => List.unmodifiable(_hiddenWatchNextPackages);
+  bool get startOnBoot => _startOnBoot;
+  bool get showNotificationsWidgetInStatusBar => _showNotificationsWidgetInStatusBar;
+  bool get autoHideNotificationsWidget => _autoHideNotificationsWidget;
+  bool get showWeatherInStatusBar => _showWeatherInStatusBar;
+  bool get showWeatherWarnings => _showWeatherWarnings;
+  String get temperatureUnit => _temperatureUnit;
+  bool get useFahrenheit => _temperatureUnit == TEMPERATURE_UNIT_FAHRENHEIT;
+
+  String get appLanguage => _appLanguage;
+
+  Locale? get appLocale {
+    if (_appLanguage.isEmpty) {
+      return null;
+    }
+    return _appLanguage == 'iw' ? const Locale('he') : Locale(_appLanguage);
+  }
+
   String get accentColorHex => _accentColorHex;
 
   String get screensaverClockStyle => _screensaverClockStyle;
 
+  String get screensaverAnimationStyle => _screensaverAnimationStyle;
+
   Color get accentColor {
     final hex = accentColorHex;
-    return Color(int.parse("0xFF$hex"));
+    final int value = int.tryParse("0xFF$hex") ?? 0xFF7C4DFF;
+    return Color(value);
   }
 
   SettingsService(this._sharedPreferences) {
+    reload();
+  }
+
+  void reload() {
     _appHighlightAnimationEnabled = _sharedPreferences.getBool(_appHighlightAnimationEnabledKey) ?? true;
     _appKeyClickEnabled = _sharedPreferences.getBool(_appKeyClickEnabledKey) ?? true;
     _autoHideAppBarEnabled = _sharedPreferences.getBool(_autoHideAppBarKey) ?? false;
     _showCategoryTitles = _sharedPreferences.getBool(_showCategoryTitlesKey) ?? true;
+    _showCategoryAppCount = _sharedPreferences.getBool(_showCategoryAppCountKey) ?? false;
     _showAppNamesBelowIcons = _sharedPreferences.getBool(_showAppNamesBelowIconsKey) ?? false;
     _themes = _sharedPreferences.getString(_themesKey) ?? "modern";
     _hideHighlightOutlineOnHomescreen = _sharedPreferences.getBool(_hideHighlightOutlineOnHomescreenKey) ?? false;
@@ -151,11 +240,103 @@ class SettingsService extends ChangeNotifier {
     _dateFormat = _sharedPreferences.getString(_dateFormatKey) ?? defaultDateFormat;
     _timeFormat = _sharedPreferences.getString(_timeFormatKey) ?? defaultTimeFormat;
     _dataUsagePeriod = _sharedPreferences.getString(_dataUsagePeriodKey) ?? DATA_USAGE_DAILY;
-    _showDataWidgetInStatusBar = _sharedPreferences.getBool(_showDataWidgetInStatusBarKey) ?? true;
+    _showDataWidgetInStatusBar = _sharedPreferences.getBool(_showDataWidgetInStatusBarKey) ?? false;
     _showNetworkIndicatorInStatusBar = _sharedPreferences.getBool(_showNetworkIndicatorInStatusBarKey) ?? true;
     _accentColorHex = _sharedPreferences.getString(_accentColorKey) ?? ACCENT_COLOR_PURPLE;
     _screensaverClockStyle = _sharedPreferences.getString(_screensaverClockStyleKey) ?? "minimal";
+    _screensaverAnimationStyle = _sharedPreferences.getString(_screensaverAnimationStyleKey) ?? SCREENSAVER_ANIMATION_BOUNCE;
     _timeBasedWallpaperEnabled = _sharedPreferences.getBool(_timeBasedWallpaperEnabledKey) ?? false;
+    _showInputsWidgetInStatusBar = _sharedPreferences.getBool(_showInputsWidgetInStatusBarKey) ?? true;
+    _showContinueWatching = _sharedPreferences.getBool(_showContinueWatchingKey) ?? false;
+    _continueWatchingCardSize = _sharedPreferences.getString(_continueWatchingCardSizeKey) ?? "normal";
+    _continueWatchingMaxItems = _sharedPreferences.getInt(_continueWatchingMaxItemsKey) ?? 15;
+    _continueWatchingShowProgress = _sharedPreferences.getBool(_continueWatchingShowProgressKey) ?? true;
+    _continueWatchingShowPercentage = _sharedPreferences.getBool(_continueWatchingShowPercentageKey) ?? true;
+    _continueWatchingShowDescription = _sharedPreferences.getBool(_continueWatchingShowDescriptionKey) ?? true;
+    _continueWatchingOrder = _sharedPreferences.getInt(_continueWatchingOrderKey) ?? 0;
+    _continueWatchingHideThreshold = _sharedPreferences.getInt(_continueWatchingHideThresholdKey) ?? 0;
+    _hiddenWatchNextProgramIds = _sharedPreferences.getStringList(_hiddenWatchNextProgramIdsKey) ?? [];
+    _hiddenWatchNextPackages = _sharedPreferences.getStringList(_hiddenWatchNextPackagesKey) ?? [];
+    _startOnBoot = _sharedPreferences.getBool(_startOnBootKey) ?? false;
+    _showNotificationsWidgetInStatusBar = _sharedPreferences.getBool(_showNotificationsWidgetInStatusBarKey) ?? true;
+    _autoHideNotificationsWidget = _sharedPreferences.getBool(_autoHideNotificationsWidgetKey) ?? false;
+    _appLanguage = _sharedPreferences.getString(_appLanguageKey) ?? "";
+    _showWeatherInStatusBar = _sharedPreferences.getBool(_showWeatherInStatusBarKey) ?? false;
+    _showWeatherWarnings = _sharedPreferences.getBool(_showWeatherWarningsKey) ?? true;
+    _temperatureUnit = _sharedPreferences.getString(_temperatureUnitKey) ?? TEMPERATURE_UNIT_CELSIUS;
+    _autoAddNewApps = _sharedPreferences.getBool(_autoAddNewAppsKey) ?? true;
+    notifyListeners();
+  }
+
+  Map<String, dynamic> exportSettingsMap() {
+    return {
+      _autoAddNewAppsKey: _autoAddNewApps,
+      _appHighlightAnimationEnabledKey: _appHighlightAnimationEnabled,
+      _appKeyClickEnabledKey: _appKeyClickEnabled,
+      _autoHideAppBarKey: _autoHideAppBarEnabled,
+      _showCategoryTitlesKey: _showCategoryTitles,
+      _showCategoryAppCountKey: _showCategoryAppCount,
+      _showAppNamesBelowIconsKey: _showAppNamesBelowIcons,
+      _themesKey: _themes,
+      _hideHighlightOutlineOnHomescreenKey: _hideHighlightOutlineOnHomescreen,
+      _appSelectorTransitionAnimationEnabledKey: _appSelectorTransitionAnimationEnabled,
+      _showDateInStatusBarKey: _showDateInStatusBar,
+      _showTimeInStatusBarKey: _showTimeInStatusBar,
+      if (_gradientUuid != null) _gradientUuidKey: _gradientUuid,
+      _backButtonActionKey: _backButtonAction,
+      _dateFormatKey: _dateFormat,
+      _timeFormatKey: _timeFormat,
+      _dataUsagePeriodKey: _dataUsagePeriod,
+      _showDataWidgetInStatusBarKey: _showDataWidgetInStatusBar,
+      _showNetworkIndicatorInStatusBarKey: _showNetworkIndicatorInStatusBar,
+      _accentColorKey: _accentColorHex,
+      _screensaverClockStyleKey: _screensaverClockStyle,
+      _screensaverAnimationStyleKey: _screensaverAnimationStyle,
+      _timeBasedWallpaperEnabledKey: _timeBasedWallpaperEnabled,
+      _showInputsWidgetInStatusBarKey: _showInputsWidgetInStatusBar,
+      _showContinueWatchingKey: _showContinueWatching,
+      _continueWatchingCardSizeKey: _continueWatchingCardSize,
+      _continueWatchingMaxItemsKey: _continueWatchingMaxItems,
+      _continueWatchingShowProgressKey: _continueWatchingShowProgress,
+      _continueWatchingShowPercentageKey: _continueWatchingShowPercentage,
+      _continueWatchingShowDescriptionKey: _continueWatchingShowDescription,
+      _continueWatchingOrderKey: _continueWatchingOrder,
+      _continueWatchingHideThresholdKey: _continueWatchingHideThreshold,
+      _hiddenWatchNextProgramIdsKey: _hiddenWatchNextProgramIds,
+      _hiddenWatchNextPackagesKey: _hiddenWatchNextPackages,
+      _startOnBootKey: _startOnBoot,
+      _showNotificationsWidgetInStatusBarKey: _showNotificationsWidgetInStatusBar,
+      _autoHideNotificationsWidgetKey: _autoHideNotificationsWidget,
+      _appLanguageKey: _appLanguage,
+      _showWeatherInStatusBarKey: _showWeatherInStatusBar,
+      _showWeatherWarningsKey: _showWeatherWarnings,
+      _temperatureUnitKey: _temperatureUnit,
+    };
+  }
+
+  Future<void> importSettingsMap(Map<String, dynamic> settingsMap) async {
+    for (final entry in settingsMap.entries) {
+      final key = entry.key;
+      final value = entry.value;
+      if (value is bool) {
+        await _sharedPreferences.setBool(key, value);
+      } else if (value is int) {
+        await _sharedPreferences.setInt(key, value);
+      } else if (value is double) {
+        await _sharedPreferences.setDouble(key, value);
+      } else if (value is String) {
+        await _sharedPreferences.setString(key, value);
+      } else if (value is List) {
+        await _sharedPreferences.setStringList(key, value.map((e) => e.toString()).toList());
+      }
+    }
+    reload();
+  }
+
+  Future<void> setAppLanguage(String value) async {
+    await _sharedPreferences.setString(_appLanguageKey, value);
+    _appLanguage = value;
+    notifyListeners();
   }
 
   Future<void> setAppHighlightAnimationEnabled(bool value) async {
@@ -201,6 +382,12 @@ class SettingsService extends ChangeNotifier {
   Future<void> setShowCategoryTitles(bool show) async {
     await _sharedPreferences.setBool(_showCategoryTitlesKey, show);
     _showCategoryTitles = show;
+    notifyListeners();
+  }
+
+  Future<void> setShowCategoryAppCount(bool show) async {
+    await _sharedPreferences.setBool(_showCategoryAppCountKey, show);
+    _showCategoryAppCount = show;
     notifyListeners();
   }
 
@@ -270,11 +457,167 @@ class SettingsService extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> setScreensaverAnimationStyle(String style) async {
+    await _sharedPreferences.setString(_screensaverAnimationStyleKey, style);
+    _screensaverAnimationStyle = style;
+    notifyListeners();
+  }
+
   bool get timeBasedWallpaperEnabled => _timeBasedWallpaperEnabled;
 
   Future<void> setTimeBasedWallpaperEnabled(bool enabled) async {
     await _sharedPreferences.setBool(_timeBasedWallpaperEnabledKey, enabled);
     _timeBasedWallpaperEnabled = enabled;
+    notifyListeners();
+  }
+
+  Future<void> setShowInputsWidgetInStatusBar(bool show) async {
+    await _sharedPreferences.setBool(_showInputsWidgetInStatusBarKey, show);
+    _showInputsWidgetInStatusBar = show;
+    notifyListeners();
+  }
+
+  Future<void> setShowContinueWatching(bool show) async {
+    await _sharedPreferences.setBool(_showContinueWatchingKey, show);
+    _showContinueWatching = show;
+    notifyListeners();
+  }
+
+  Future<void> setContinueWatchingCardSize(String size) async {
+    await _sharedPreferences.setString(_continueWatchingCardSizeKey, size);
+    _continueWatchingCardSize = size;
+    notifyListeners();
+  }
+
+  Future<void> setContinueWatchingMaxItems(int count) async {
+    await _sharedPreferences.setInt(_continueWatchingMaxItemsKey, count);
+    _continueWatchingMaxItems = count;
+    notifyListeners();
+  }
+
+  Future<void> setContinueWatchingShowProgress(bool show) async {
+    await _sharedPreferences.setBool(_continueWatchingShowProgressKey, show);
+    _continueWatchingShowProgress = show;
+    notifyListeners();
+  }
+
+  Future<void> setContinueWatchingShowPercentage(bool show) async {
+    await _sharedPreferences.setBool(_continueWatchingShowPercentageKey, show);
+    _continueWatchingShowPercentage = show;
+    notifyListeners();
+  }
+
+  Future<void> setContinueWatchingShowDescription(bool show) async {
+    await _sharedPreferences.setBool(_continueWatchingShowDescriptionKey, show);
+    _continueWatchingShowDescription = show;
+    notifyListeners();
+  }
+
+  Future<void> setContinueWatchingOrder(int order) async {
+    await _sharedPreferences.setInt(_continueWatchingOrderKey, order);
+    _continueWatchingOrder = order;
+    notifyListeners();
+  }
+
+  Future<void> setContinueWatchingHideThreshold(int threshold) async {
+    await _sharedPreferences.setInt(_continueWatchingHideThresholdKey, threshold);
+    _continueWatchingHideThreshold = threshold;
+    notifyListeners();
+  }
+
+  Future<void> hideWatchNextProgram(int id) async {
+    final strId = id.toString();
+    if (!_hiddenWatchNextProgramIds.contains(strId)) {
+      _hiddenWatchNextProgramIds = List<String>.from(_hiddenWatchNextProgramIds)..add(strId);
+      await _sharedPreferences.setStringList(_hiddenWatchNextProgramIdsKey, _hiddenWatchNextProgramIds);
+      notifyListeners();
+    }
+  }
+
+  Future<void> unhideWatchNextProgram(int id) async {
+    final strId = id.toString();
+    if (_hiddenWatchNextProgramIds.contains(strId)) {
+      _hiddenWatchNextProgramIds = List<String>.from(_hiddenWatchNextProgramIds)..remove(strId);
+      await _sharedPreferences.setStringList(_hiddenWatchNextProgramIdsKey, _hiddenWatchNextProgramIds);
+      notifyListeners();
+    }
+  }
+
+  Future<void> hideWatchNextPackage(String packageName) async {
+    if (!_hiddenWatchNextPackages.contains(packageName)) {
+      _hiddenWatchNextPackages = List<String>.from(_hiddenWatchNextPackages)..add(packageName);
+      await _sharedPreferences.setStringList(_hiddenWatchNextPackagesKey, _hiddenWatchNextPackages);
+      notifyListeners();
+    }
+  }
+
+  Future<void> unhideWatchNextPackage(String packageName) async {
+    if (_hiddenWatchNextPackages.contains(packageName)) {
+      _hiddenWatchNextPackages = List<String>.from(_hiddenWatchNextPackages)..remove(packageName);
+      await _sharedPreferences.setStringList(_hiddenWatchNextPackagesKey, _hiddenWatchNextPackages);
+      notifyListeners();
+    }
+  }
+
+  Future<void> unhideAllWatchNextPackages() async {
+    _hiddenWatchNextPackages = [];
+    await _sharedPreferences.remove(_hiddenWatchNextPackagesKey);
+    notifyListeners();
+  }
+
+  Future<void> clearHiddenWatchNextPrograms() async {
+    _hiddenWatchNextProgramIds = [];
+    await _sharedPreferences.remove(_hiddenWatchNextProgramIdsKey);
+    notifyListeners();
+  }
+
+  Future<void> clearAllHiddenWatchNext() async {
+    _hiddenWatchNextProgramIds = [];
+    _hiddenWatchNextPackages = [];
+    await _sharedPreferences.remove(_hiddenWatchNextProgramIdsKey);
+    await _sharedPreferences.remove(_hiddenWatchNextPackagesKey);
+    notifyListeners();
+  }
+
+  Future<void> setStartOnBoot(bool enabled) async {
+    await _sharedPreferences.setBool(_startOnBootKey, enabled);
+    _startOnBoot = enabled;
+    notifyListeners();
+  }
+
+  Future<void> setShowNotificationsWidgetInStatusBar(bool show) async {
+    await _sharedPreferences.setBool(_showNotificationsWidgetInStatusBarKey, show);
+    _showNotificationsWidgetInStatusBar = show;
+    notifyListeners();
+  }
+
+  Future<void> setAutoHideNotificationsWidget(bool value) async {
+    await _sharedPreferences.setBool(_autoHideNotificationsWidgetKey, value);
+    _autoHideNotificationsWidget = value;
+    notifyListeners();
+  }
+
+  Future<void> setShowWeatherInStatusBar(bool show) async {
+    await _sharedPreferences.setBool(_showWeatherInStatusBarKey, show);
+    _showWeatherInStatusBar = show;
+    notifyListeners();
+  }
+
+  Future<void> setShowWeatherWarnings(bool show) async {
+    await _sharedPreferences.setBool(_showWeatherWarningsKey, show);
+    _showWeatherWarnings = show;
+    notifyListeners();
+  }
+
+  Future<void> setTemperatureUnit(String unit) async {
+    await _sharedPreferences.setString(_temperatureUnitKey, unit);
+    _temperatureUnit = unit;
+    notifyListeners();
+  }
+
+  Future<void> setAutoAddNewApps(bool enabled) async {
+    await _sharedPreferences.setBool(_autoAddNewAppsKey, enabled);
+    _autoAddNewApps = enabled;
     notifyListeners();
   }
 }

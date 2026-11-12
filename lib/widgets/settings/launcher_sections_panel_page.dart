@@ -16,8 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import 'dart:async';
 import 'package:flauncher/providers/apps_service.dart';
+import 'package:flauncher/providers/settings_service.dart';
+import 'package:flauncher/widgets/settings/continue_watching_settings_page.dart';
 import 'package:flauncher/widgets/settings/focusable_settings_tile.dart';
 import 'package:flauncher/widgets/settings/launcher_section_panel_page.dart';
 import 'package:flutter/material.dart';
@@ -35,57 +36,120 @@ class LauncherSectionsPanelPage extends StatefulWidget {
 }
 
 class _LauncherSectionsPanelPageState extends State<LauncherSectionsPanelPage> {
-  int? _movingIndex;
+  LauncherSection? _movingSection;
+  late AppsService _appsService;
+  final Map<Object, FocusNode> _focusNodes = {};
+  DateTime? _lastMoveTime;
+  final ContinueWatchingSection _continueWatchingSection = ContinueWatchingSection();
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _appsService = Provider.of<AppsService>(context, listen: false);
+  }
+
+  FocusNode _getFocusNode(LauncherSection section) {
+    final key = ObjectKey(section);
+    return _focusNodes.putIfAbsent(key, () => FocusNode());
+  }
+
+  @override
+  void dispose() {
+    _appsService.persistSectionsOrder();
+    for (final node in _focusNodes.values) {
+      node.dispose();
+    }
+    super.dispose();
+  }
+
+  List<LauncherSection> _getDisplaySections(List<LauncherSection> appSections, SettingsService? settingsService) {
+    final list = List<LauncherSection>.from(appSections);
+    if (settingsService != null) {
+      final cwOrder = settingsService.continueWatchingOrder.clamp(0, list.length);
+      _continueWatchingSection.order = cwOrder;
+      list.insert(cwOrder, _continueWatchingSection);
+    }
+    return list;
+  }
 
   @override
   Widget build(BuildContext context) {
     AppLocalizations localizations = AppLocalizations.of(context)!;
+    final settingsService = Provider.of<SettingsService?>(context);
+
     return Column(
       children: [
         Text(localizations.launcherSections, style: Theme.of(context).textTheme.titleLarge),
-        Divider(),
+        const Divider(),
         Consumer<AppsService>(
           builder: (_, service, __) {
-            List<LauncherSection> sections = service.launcherSections;
+            final displaySections = _getDisplaySections(service.launcherSections, settingsService);
 
             return Expanded(
-              child: ReorderableListView.builder(
-                buildDefaultDragHandles: false,
-                padding: EdgeInsets.only(bottom: 80),
-                itemCount: sections.length,
-                onReorder: (int oldIndex, int newIndex) {
-                  if (oldIndex < newIndex) {
-                    newIndex -= 1;
-                  }
-                  context.read<AppsService>().moveSection(oldIndex, newIndex);
-                },
+              child: ListView.builder(
+                padding: const EdgeInsets.only(bottom: 80),
+                cacheExtent: 1000,
+                itemCount: displaySections.length,
                 itemBuilder: (context, index) {
-                  final section = sections[index];
-                  return _section(context, section, index, sections.length);
+                  final section = displaySections[index];
+                  return _section(context, section, index, displaySections.length, displaySections, settingsService);
                 },
               ),
             );
           },
         ),
-        SizedBox(height: 4, width: 0),
+        const SizedBox(height: 4, width: 0),
         FocusableSettingsTile(
-          leading: Icon(Icons.add),
+          leading: const Icon(Icons.add),
           title: Text(localizations.addSection, style: Theme.of(context).textTheme.bodyMedium),
           onPressed: () {
             Navigator.pushNamed(context, LauncherSectionPanelPage.routeName);
           },
         ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.05),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.info_outline, size: 20, color: Colors.white70),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Select with ◄ / ► then use ▲ / ▼ to reorder',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Colors.white70,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ],
     );
   }
 
-  Widget _section(BuildContext context, LauncherSection section, int index, int totalCount) {
+  Widget _section(
+    BuildContext context,
+    LauncherSection section,
+    int index,
+    int totalCount,
+    List<LauncherSection> displaySections,
+    SettingsService? settingsService,
+  ) {
     AppLocalizations localizations = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
     String title = localizations.spacer;
-    if (section is Category) {
+    if (section is ContinueWatchingSection) {
+      title = localizations.continueWatching;
+    } else if (section is Category) {
       title = section.name;
 
       if (title == localizations.spacer) {
@@ -93,27 +157,33 @@ class _LauncherSectionsPanelPageState extends State<LauncherSectionsPanelPage> {
       }
     }
 
-    final bool isMoving = _movingIndex == index;
+    final bool isMoving = _movingSection == section;
+    final focusNode = _getFocusNode(section);
 
     return Padding(
-      // Use ObjectKey to ensure uniqueness even if IDs collide across different types
       key: ObjectKey(section),
       padding: const EdgeInsets.only(bottom: 12),
       child: Focus(
+        focusNode: focusNode,
+        onFocusChange: (focused) {
+          if (focused && focusNode.context != null) {
+            Scrollable.ensureVisible(
+              focusNode.context!,
+              alignment: 0.5,
+              duration: const Duration(milliseconds: 100),
+            );
+          }
+        },
         onKeyEvent: (node, event) {
           if (event is! KeyDownEvent) return KeyEventResult.ignored;
 
           if (isMoving) {
             if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
-              if (index > 0) {
-                _move(index, index - 1);
-                return KeyEventResult.handled;
-              }
+              _moveSection(section, -1, displaySections, settingsService);
+              return KeyEventResult.handled;
             } else if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
-              if (index < totalCount - 1) {
-                _move(index, index + 1);
-                return KeyEventResult.handled;
-              }
+              _moveSection(section, 1, displaySections, settingsService);
+              return KeyEventResult.handled;
             } else if (event.logicalKey == LogicalKeyboardKey.select ||
                 event.logicalKey == LogicalKeyboardKey.enter ||
                 event.logicalKey == LogicalKeyboardKey.gameButtonA ||
@@ -128,13 +198,24 @@ class _LauncherSectionsPanelPageState extends State<LauncherSectionsPanelPage> {
             if (event.logicalKey == LogicalKeyboardKey.arrowLeft ||
                 event.logicalKey == LogicalKeyboardKey.arrowRight) {
               setState(() {
-                _movingIndex = index;
+                _movingSection = section;
               });
               return KeyEventResult.handled;
             } else if (event.logicalKey == LogicalKeyboardKey.select ||
                 event.logicalKey == LogicalKeyboardKey.enter ||
                 event.logicalKey == LogicalKeyboardKey.gameButtonA) {
-              Navigator.pushNamed(context, LauncherSectionPanelPage.routeName, arguments: index);
+              if (section is ContinueWatchingSection) {
+                Navigator.pushNamed(context, ContinueWatchingSettingsPage.routeName);
+              } else {
+                final idx = _appsService.launcherSections.indexOf(section);
+                Navigator.pushNamed(context, LauncherSectionPanelPage.routeName, arguments: idx);
+              }
+              return KeyEventResult.handled;
+            } else if (event.logicalKey == LogicalKeyboardKey.arrowDown && index < totalCount - 1) {
+              _getFocusNode(displaySections[index + 1]).requestFocus();
+              return KeyEventResult.handled;
+            } else if (event.logicalKey == LogicalKeyboardKey.arrowUp && index > 0) {
+              _getFocusNode(displaySections[index - 1]).requestFocus();
               return KeyEventResult.handled;
             }
           }
@@ -158,42 +239,40 @@ class _LauncherSectionsPanelPageState extends State<LauncherSectionsPanelPage> {
 
             return GestureDetector(
               onTap: () {
-                   if (isMoving) {
-                      _endMove();
-                   } else {
-                      Navigator.pushNamed(context, LauncherSectionPanelPage.routeName, arguments: index);
-                   }
+                if (isMoving) {
+                  _endMove();
+                } else {
+                  if (section is ContinueWatchingSection) {
+                    Navigator.pushNamed(context, ContinueWatchingSettingsPage.routeName);
+                  } else {
+                    final idx = _appsService.launcherSections.indexOf(section);
+                    Navigator.pushNamed(context, LauncherSectionPanelPage.routeName, arguments: idx);
+                  }
+                }
               },
               onLongPress: () {
-                   if (!isMoving) {
-                      setState(() {
-                        _movingIndex = index;
-                      });
-                   }
+                if (!isMoving) {
+                  setState(() {
+                    _movingSection = section;
+                  });
+                }
               },
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 50),
+              child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                 decoration: BoxDecoration(
                   color: backgroundColor,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: focused ? colorScheme.primary : (isMoving ? colorScheme.primary : Colors.transparent),
-                    width: focused ? 2 : (isMoving ? 1 : 0),
+                    color: (focused || isMoving) ? colorScheme.primary : Colors.transparent,
+                    width: 2,
                   ),
-                  boxShadow: focused 
-                      ? [BoxShadow(color: Colors.black45, blurRadius: 8, offset: Offset(0, 4))] 
-                      : null,
                 ),
                 child: Row(
                   children: [
                     // Drag Handle Icon
-                    ReorderableDragStartListener(
-                      index: index,
-                      child: Icon(
-                        isMoving ? Icons.drag_indicator : Icons.drag_handle,
-                        color: iconColor,
-                      ),
+                    Icon(
+                      isMoving ? Icons.drag_indicator : Icons.drag_handle,
+                      color: iconColor,
                     ),
                     const SizedBox(width: 16),
                     
@@ -210,11 +289,11 @@ class _LauncherSectionsPanelPageState extends State<LauncherSectionsPanelPage> {
                     
                     // Move Indicators
                     if (isMoving) ...[
-                       Icon(Icons.keyboard_arrow_up, color: textColor),
-                       const SizedBox(width: 4),
-                       Icon(Icons.keyboard_arrow_down, color: textColor),
+                      Icon(Icons.keyboard_arrow_up, color: textColor),
+                      const SizedBox(width: 4),
+                      Icon(Icons.keyboard_arrow_down, color: textColor),
                     ] else ...[
-                       Icon(Icons.chevron_right, color: Colors.white24),
+                      const Icon(Icons.chevron_right, color: Colors.white24),
                     ],
                   ],
                 ),
@@ -226,18 +305,52 @@ class _LauncherSectionsPanelPageState extends State<LauncherSectionsPanelPage> {
     );
   }
 
+  void _moveSection(
+    LauncherSection movingSection,
+    int direction,
+    List<LauncherSection> displaySections,
+    SettingsService? settingsService,
+  ) {
+    final now = DateTime.now();
+    if (_lastMoveTime != null && now.difference(_lastMoveTime!) < const Duration(milliseconds: 60)) {
+      return;
+    }
+    _lastMoveTime = now;
 
-  void _move(int oldIndex, int newIndex) {
-    context.read<AppsService>().moveSectionInMemory(oldIndex, newIndex);
+    final currentIndex = displaySections.indexOf(movingSection);
+    if (currentIndex == -1) return;
+    final newIndex = currentIndex + direction;
+    if (newIndex < 0 || newIndex >= displaySections.length) return;
+
+    final otherSection = displaySections[newIndex];
+    if (movingSection is ContinueWatchingSection) {
+      settingsService?.setContinueWatchingOrder(newIndex);
+    } else if (otherSection is ContinueWatchingSection) {
+      settingsService?.setContinueWatchingOrder(currentIndex);
+    } else {
+      final appSections = _appsService.launcherSections;
+      final oldAppIndex = appSections.indexOf(movingSection);
+      final newAppIndex = appSections.indexOf(otherSection);
+      if (oldAppIndex != -1 && newAppIndex != -1) {
+        _appsService.moveSectionInMemory(oldAppIndex, newAppIndex);
+      }
+    }
+
     setState(() {
-      _movingIndex = newIndex;
+      _movingSection = movingSection;
+    });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _getFocusNode(movingSection).requestFocus();
+      }
     });
   }
 
   void _endMove() {
-    context.read<AppsService>().persistSectionsOrder();
+    _appsService.persistSectionsOrder();
     setState(() {
-      _movingIndex = null;
+      _movingSection = null;
     });
   }
 }

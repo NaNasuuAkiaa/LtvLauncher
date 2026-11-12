@@ -24,25 +24,49 @@ class FLauncherChannel {
   static const _methodChannel = MethodChannel('me.efesser.flauncher/method');
   static const _appsEventChannel = EventChannel('me.efesser.flauncher/event_apps');
   static const _networkEventChannel = EventChannel('me.efesser.flauncher/event_network');
+  static const _notificationsEventChannel = EventChannel('me.efesser.flauncher/event_notifications');
+  static const _weatherEventChannel = EventChannel('me.efesser.flauncher/event_weather');
+  static const _watchNextEventChannel = EventChannel('me.efesser.flauncher/event_watch_next');
 
   Future<List<Map<dynamic, dynamic>>> getApplications() async {
-    List<Map<dynamic, dynamic>>? applications = await _methodChannel.invokeListMethod("getApplications");
-    return applications!;
+    try {
+      List<Map<dynamic, dynamic>>? applications = await _methodChannel.invokeListMethod("getApplications");
+      return applications ?? const [];
+    } catch (_) {
+      return const [];
+    }
   }
 
   Future<Uint8List> getApplicationBanner(String packageName) async {
-    Uint8List bytes = await _methodChannel.invokeMethod("getApplicationBanner", packageName);
-    return bytes;
+    try {
+      final Uint8List? bytes = await _methodChannel.invokeMethod("getApplicationBanner", packageName);
+      return bytes ?? Uint8List(0);
+    } catch (_) {
+      return Uint8List(0);
+    }
   }
 
   Future<Uint8List> getApplicationIcon(String packageName) async {
-    Uint8List bytes = await _methodChannel.invokeMethod("getApplicationIcon", packageName);
-    return bytes;
+    try {
+      final Uint8List? bytes = await _methodChannel.invokeMethod("getApplicationIcon", packageName);
+      return bytes ?? Uint8List(0);
+    } catch (_) {
+      return Uint8List(0);
+    }
   }
 
   Future<void> launchActivityFromAction(String action) async => await _methodChannel.invokeMethod('launchActivityFromAction', action);
 
   Future<void> launchApp(String packageName) async => await _methodChannel.invokeMethod('launchApp', packageName);
+
+  Future<bool> openUrl(String url) async {
+    try {
+      final bool? success = await _methodChannel.invokeMethod("openUrl", url);
+      return success ?? false;
+    } catch (_) {
+      return false;
+    }
+  }
 
   Future<void> openSettings() async => await _methodChannel.invokeMethod('openSettings');
 
@@ -96,6 +120,25 @@ class FLauncherChannel {
   Future<void> openWifiSettings() async =>
       await _methodChannel.invokeMethod("openWifiSettings");
 
+  Future<void> openVpnSettings() async {
+    try {
+      await _methodChannel.invokeMethod("openVpnSettings");
+    } catch (_) {
+      // Ignore error in non-Android or test environments
+    }
+  }
+
+  Future<void> openDefaultLauncherSettings() async =>
+      await _methodChannel.invokeMethod("openDefaultLauncherSettings");
+
+  Future<void> playClickSound() async {
+    try {
+      await _methodChannel.invokeMethod("playClickSound");
+    } catch (_) {
+      // Ignore error in non-Android or test environments
+    }
+  }
+
   Future<void> startAmbientMode() async => await _methodChannel.invokeMethod("startAmbientMode");
 
   void addAppsChangedListener(void Function(Map<String, dynamic>) listener) =>
@@ -109,4 +152,162 @@ class FLauncherChannel {
         Map<dynamic, dynamic> eventMap = event;
         listener(eventMap.cast<String, dynamic>());
       });
+
+  Future<List<Map<dynamic, dynamic>>> getTvInputs() async {
+    try {
+      final List<dynamic> inputs = await _methodChannel.invokeMethod("getTvInputs");
+      return inputs.cast<Map<dynamic, dynamic>>();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  Future<bool> launchTvInput(String inputId) async {
+    try {
+      final bool success = await _methodChannel.invokeMethod("launchTvInput", inputId);
+      return success;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<bool> checkNotificationListenerPermission() async =>
+      await _methodChannel.invokeMethod("checkNotificationListenerPermission");
+
+  Future<bool> requestNotificationListenerPermission() async {
+    final bool? success = await _methodChannel.invokeMethod<bool>("requestNotificationListenerPermission");
+    return success ?? false;
+  }
+
+  Future<bool> openAppNotificationSettings() async {
+    final bool? success = await _methodChannel.invokeMethod<bool>("openAppNotificationSettings");
+    return success ?? false;
+  }
+
+  Future<bool> checkOverlayPermission() async =>
+      await _methodChannel.invokeMethod("checkOverlayPermission");
+
+  Future<bool> requestOverlayPermission() async {
+    final bool? success = await _methodChannel.invokeMethod<bool>("requestOverlayPermission");
+    return success ?? false;
+  }
+
+  Future<bool> checkAccessibilityPermission() async =>
+      await _methodChannel.invokeMethod("checkAccessibilityPermission");
+
+  Future<bool> requestAccessibilityPermission() async {
+    final bool? success = await _methodChannel.invokeMethod<bool>("requestAccessibilityPermission");
+    return success ?? false;
+  }
+
+  Future<List<Map<dynamic, dynamic>>> getActiveNotifications() async {
+    try {
+      final List<dynamic> list = await _methodChannel.invokeMethod("getActiveNotifications");
+      return list.cast<Map<dynamic, dynamic>>();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  StreamSubscription addNotificationsChangedListener(void Function(List<Map<dynamic, dynamic>>) listener) =>
+      _notificationsEventChannel.receiveBroadcastStream().listen((event) {
+        final List<dynamic> eventList = event;
+        listener(eventList.cast<Map<dynamic, dynamic>>());
+      });
+
+  Future<bool> dismissNotification(String key) async {
+    try {
+      final bool success = await _methodChannel.invokeMethod("dismissNotification", {"key": key});
+      return success;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<bool> dismissAllNotifications() async {
+    try {
+      final bool success = await _methodChannel.invokeMethod("dismissAllNotifications");
+      return success;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<List<Map<dynamic, dynamic>>> getWatchNextPrograms() async {
+    try {
+      final List<dynamic>? list = await _methodChannel.invokeMethod("getWatchNextPrograms");
+      return list?.cast<Map<dynamic, dynamic>>() ?? [];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  Future<bool> launchWatchNextProgram(String intentUri) async {
+    try {
+      final bool success = await _methodChannel.invokeMethod("launchWatchNextProgram", {"intentUri": intentUri});
+      return success;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<bool> deleteWatchNextProgram(int id) async {
+    try {
+      final bool? success = await _methodChannel.invokeMethod<bool>("deleteWatchNextProgram", {"id": id});
+      return success ?? false;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<bool> checkWatchNextPermission() async {
+    try {
+      final bool? allowed = await _methodChannel.invokeMethod<bool>("checkWatchNextPermission");
+      return allowed ?? false;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<bool> requestWatchNextPermission() async {
+    try {
+      final bool? allowed = await _methodChannel.invokeMethod<bool>("requestWatchNextPermission");
+      return allowed ?? false;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<String?> getLatestWeatherData() async {
+    try {
+      final String? json = await _methodChannel.invokeMethod("getLatestWeatherData");
+      return json;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<bool> isBreezyWeatherInstalled() async {
+    try {
+      final bool? installed = await _methodChannel.invokeMethod<bool>("isBreezyWeatherInstalled");
+      return installed ?? false;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<bool> openBreezyWeather() async {
+    try {
+      final bool? opened = await _methodChannel.invokeMethod<bool>("openBreezyWeather");
+      return opened ?? false;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  StreamSubscription<dynamic> addWeatherChangedListener(void Function(dynamic) onEvent) =>
+      _weatherEventChannel.receiveBroadcastStream().listen(onEvent);
+
+  StreamSubscription<dynamic> addWatchNextChangedListener(void Function(dynamic) onEvent) =>
+      _watchNextEventChannel.receiveBroadcastStream().listen(onEvent);
 }

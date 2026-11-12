@@ -17,6 +17,7 @@
  */
 
 import 'package:flutter/material.dart';
+import 'package:flauncher/l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 
 import '../../providers/settings_service.dart';
@@ -51,28 +52,30 @@ class AccentColorPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppLocalizations localizations = AppLocalizations.of(context)!;
     return Consumer<SettingsService>(
       builder: (context, settingsService, _) {
-        final currentColor = settingsService.accentColorHex;
-        
+        final currentColorHex = settingsService.accentColorHex;
+        final currentColor = _hexToColor(currentColorHex);
+
         return Column(
           children: [
-            Text('Accent Color', style: Theme.of(context).textTheme.titleLarge),
+            Text(localizations.accentColor, style: Theme.of(context).textTheme.titleLarge),
             const Divider(),
             Expanded(
               child: GridView.builder(
                 padding: const EdgeInsets.all(16),
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 3,
-                  crossAxisSpacing: 16,
-                  mainAxisSpacing: 16,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
                   childAspectRatio: 1.3,
                 ),
                 itemCount: colorPresets.length,
                 itemBuilder: (context, index) {
                   final (hex, name) = colorPresets[index];
-                  final isSelected = currentColor == hex;
-                  
+                  final isSelected = currentColorHex == hex;
+
                   return _ColorTile(
                     color: _hexToColor(hex),
                     name: name,
@@ -83,34 +86,37 @@ class AccentColorPage extends StatelessWidget {
                 },
               ),
             ),
-            // Preview section
+            // Minimalist Accent Preview Indicator
             Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Container(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                 decoration: BoxDecoration(
                   color: Colors.black26,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: _hexToColor(currentColor),
-                    width: 3,
+                    color: currentColor.withOpacity(0.5),
+                    width: 1.5,
                   ),
                 ),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(
-                      Icons.palette,
-                      color: _hexToColor(currentColor),
-                      size: 32,
+                    Container(
+                      width: 10,
+                      height: 10,
+                      decoration: BoxDecoration(
+                        color: currentColor,
+                        shape: BoxShape.circle,
+                      ),
                     ),
-                    const SizedBox(width: 12),
-                    Text(
-                      'Preview',
+                    const SizedBox(width: 8),
+                    const Text(
+                      'Selected Accent',
                       style: TextStyle(
-                        color: _hexToColor(currentColor),
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ],
@@ -148,6 +154,9 @@ class _ColorTileState extends State<_ColorTile> {
 
   @override
   Widget build(BuildContext context) {
+    final isLightColor = widget.color.computeLuminance() > 0.5;
+    final iconColor = isLightColor ? Colors.black : Colors.white;
+
     return Actions(
       actions: <Type, Action<Intent>>{
         ActivateIntent: CallbackAction<ActivateIntent>(onInvoke: (_) => widget.onTap()),
@@ -158,44 +167,44 @@ class _ColorTileState extends State<_ColorTile> {
         onFocusChange: (hasFocus) => setState(() => _focused = hasFocus),
         child: GestureDetector(
           onTap: widget.onTap,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 50),
+          child: Container(
             decoration: BoxDecoration(
-              color: widget.color,
-              borderRadius: BorderRadius.circular(12),
+              color: widget.color.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(10),
               border: Border.all(
-                color: _focused ? Colors.white : (widget.isSelected ? Colors.white : Colors.transparent),
-                width: _focused ? 3 : (widget.isSelected ? 2 : 0),
+                color: _focused
+                    ? Colors.white
+                    : (widget.isSelected ? widget.color : Colors.transparent),
+                width: _focused ? 2.5 : (widget.isSelected ? 2 : 0),
               ),
               boxShadow: _focused
-                  ? [BoxShadow(color: widget.color.withOpacity(0.6), blurRadius: 12, spreadRadius: 2)]
-                  : widget.isSelected
-                      ? [BoxShadow(color: widget.color.withOpacity(0.4), blurRadius: 8)]
-                      : null,
+                  ? [BoxShadow(color: widget.color.withOpacity(0.5), blurRadius: 8)]
+                  : null,
             ),
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (widget.isSelected)
-                    const Icon(Icons.check, color: Colors.white, size: 24),
-                  if (widget.isSelected)
-                    const SizedBox(height: 2),
-                  FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text(
-                      widget.name,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                        shadows: [Shadow(color: Colors.black54, blurRadius: 4)],
-                      ),
-                    ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 14,
+                  height: 14,
+                  decoration: BoxDecoration(
+                    color: widget.color,
+                    shape: BoxShape.circle,
                   ),
-                ],
-              ),
+                  child: widget.isSelected
+                      ? Icon(Icons.check, color: iconColor, size: 10)
+                      : null,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  widget.name,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: _focused || widget.isSelected ? FontWeight.bold : FontWeight.w500,
+                    fontSize: 13,
+                  ),
+                ),
+              ],
             ),
           ),
         ),

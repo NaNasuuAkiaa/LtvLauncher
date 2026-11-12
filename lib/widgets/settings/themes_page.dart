@@ -35,6 +35,13 @@ class ThemesPage extends StatelessWidget {
       selector: (_, settingsService) => settingsService.themes,
       builder: (context, currentShape, _) {
         final settingsService = context.read<SettingsService>();
+        final bool isAnySelected = currentShape == 'modern' ||
+            currentShape == 'premium' ||
+            currentShape == 'glow' ||
+            currentShape == 'squircle' ||
+            currentShape == 'classic' ||
+            currentShape == 'minimal' ||
+            currentShape == 'capsule';
 
         return Column(
           children: [
@@ -49,7 +56,7 @@ class ThemesPage extends StatelessWidget {
                       value: 'modern',
                       groupValue: currentShape,
                       onChanged: (value) => settingsService.setThemes(value!),
-                      autofocus: currentShape == 'modern',
+                      autofocus: currentShape == 'modern' || !isAnySelected,
                     ),
                     _ShapeRadioTile(
                       title: 'Premium',
@@ -59,11 +66,32 @@ class ThemesPage extends StatelessWidget {
                       autofocus: currentShape == 'premium',
                     ),
                     _ShapeRadioTile(
+                      title: 'Glow',
+                      value: 'glow',
+                      groupValue: currentShape,
+                      onChanged: (value) => settingsService.setThemes(value!),
+                      autofocus: currentShape == 'glow',
+                    ),
+                    _ShapeRadioTile(
+                      title: 'Squircle',
+                      value: 'squircle',
+                      groupValue: currentShape,
+                      onChanged: (value) => settingsService.setThemes(value!),
+                      autofocus: currentShape == 'squircle',
+                    ),
+                    _ShapeRadioTile(
                       title: 'Classic',
                       value: 'classic',
                       groupValue: currentShape,
                       onChanged: (value) => settingsService.setThemes(value!),
                       autofocus: currentShape == 'classic',
+                    ),
+                    _ShapeRadioTile(
+                      title: 'Minimal',
+                      value: 'minimal',
+                      groupValue: currentShape,
+                      onChanged: (value) => settingsService.setThemes(value!),
+                      autofocus: currentShape == 'minimal',
                     ),
                     _ShapeRadioTile(
                       title: 'Capsule',
@@ -137,14 +165,11 @@ class _ShapeRadioTileState extends State<_ShapeRadioTile> {
               );
             }
           },
-          child: InkWell(
+          child: GestureDetector(
             onTap: () {
               widget.onChanged(widget.value);
             },
-            focusColor: Colors.transparent,
-            hoverColor: Colors.transparent,
-            splashColor: Colors.transparent,
-            highlightColor: Colors.transparent,
+            behavior: HitTestBehavior.opaque,
             child: Container(
               margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
