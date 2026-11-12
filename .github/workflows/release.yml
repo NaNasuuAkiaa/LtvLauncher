@@ -25,6 +25,9 @@ jobs:
         with:
           flutter-version: '3.24.5'
 
+      - name: Grant execute permission for gradlew
+        run: chmod +x android/gradlew
+
       - name: Install Dependencies
         run: flutter pub get
 
