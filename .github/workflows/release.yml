@@ -1,15 +1,7 @@
 name: Release APK
 
-on: 
-  push:
-    tags:
-      - 'v*'
+on:
   workflow_dispatch:
-    inputs:
-      tag_name:
-        description: 'Tag name for the release (e.g. v1.0.0)'
-        required: true
-        default: 'v-dev'
 
 permissions:
   contents: write
@@ -21,19 +13,12 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
-          java-version: '21'
-
-      - name: Install SQLite
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y sqlite3 libsqlite3-dev
+          java-version: '17'
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
@@ -43,52 +28,11 @@ jobs:
       - name: Install Dependencies
         run: flutter pub get
 
-      - name: Generate Mocks
-        run: flutter pub run build_runner build --delete-conflicting-outputs
+      - name: Build Debug APK
+        run: flutter build apk --debug
 
-      - name: Generate Database Migrations Schema
-        run: flutter pub run drift_dev schema generate drift_schemas/ test/generated_migrations/
-
-      - name: Configure Keystore Signing
-        env:
-          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
-        if: ${{ env.KEYSTORE_BASE64 != '' }}
-        run: |
-          python3 -c "import os, base64; s = os.environ['KEYSTORE_BASE64']; s = ''.join(s.split()); m = len(s) % 4; s += '=' * (4 - m) if m else ''; open('android/my-release-key.jks', 'wb').write(base64.b64decode(s))"
-
-      - name: Build Release APKs
-        env:
-          KEYSTORE_FILE: "../my-release-key.jks"
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-        run: |
-          # Build universal APK first
-          flutter build apk --release --target-platform=android-arm,android-arm64
-          # Rename/save it temporarily
-          mv build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/app-release.apk.temp
-          # Build split APKs
-          flutter build apk --release --split-per-abi --target-platform=android-arm,android-arm64
-          # Rename to final LTvLauncher-* names
-          mv build/app/outputs/flutter-apk/app-release.apk.temp build/app/outputs/flutter-apk/LTvLauncher-universal-release.apk
-          mv build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk build/app/outputs/flutter-apk/LTvLauncher-armeabi-v7a-release.apk
-          mv build/app/outputs/flutter-apk/app-arm64-v8a-release.apk build/app/outputs/flutter-apk/LTvLauncher-arm64-v8a-release.apk
-
-      - name: Generate Release Notes
-        env:
-          TAG_NAME: ${{ github.event.inputs.tag_name || github.ref_name }}
-        run: python3 .github/scripts/generate_release_notes.py
-
-      - name: Create GitHub Release and Upload APKs
-        uses: softprops/action-gh-release@v2
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
         with:
-          tag_name: ${{ github.event.inputs.tag_name || github.ref_name }}
-          body_path: release_notes.md
-          files: |
-            build/app/outputs/flutter-apk/LTvLauncher-universal-release.apk
-            build/app/outputs/flutter-apk/LTvLauncher-armeabi-v7a-release.apk
-            build/app/outputs/flutter-apk/LTvLauncher-arm64-v8a-release.apk
-          draft: false
-          prerelease: ${{ contains(github.event.inputs.tag_name || github.ref_name, '-') }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          name: ltv-launcher-debug
+          path: build/app/outputs/flutter-apk/app-debug.apk
